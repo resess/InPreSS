@@ -87,7 +87,7 @@ Here is an example of running bug_id 6 of InPreSS subjects:
 
 ![](/img/args.png)
 
-Where, the base folder storing the InPreSS subjects is "/Documents/Projects/defects4j/bug_repos/". 
+Where, the base folder storing the InPreSS subjects is "Users/sahar1/Documents/Projects/bug_repos/". 
 "InPreSS" is the name of the benchmark to run. 
 Bug_id is 6 and the failing test is "com.intuit.wasabi.export.rest.impl.DefaultRestEndPointTest::testGetRestEndPointURI".
 
