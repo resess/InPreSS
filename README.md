@@ -4,6 +4,15 @@ This repository hosts InPress, a regression analysis approach based on program s
 Given a test failure and two versions of a program and a test passing on one and failing on the other version of the program, 
 InPreSS automatically generates a summarized version of the slices produced by the dual slicing technique. 
 
+## Citation
+
+If you need to reference our technique, please use the following citations:
+
+Sahar Badihi*, Khaled Ahmed, Yi Li, Julia Rubin. "Responsibility in Context: On Applicability of Slicing in Semantic Regression Analysis." The 45th IEEE/ACM International Conference on Software Engineering (ICSE), 2023. (*corrsponding author)
+
+---
+---
+
 ## Table of Contents
 1. [Requirements](#Requirements)
 2. [Building the Tool](#Building-the-Tool)
@@ -25,8 +34,9 @@ InPreSS automatically generates a summarized version of the slices produced by t
 
 ## Building the Tool
 
-InPreSS relies on the TRegression (ERASE) (https://github.com/llmhyy/tregression) project to align the two traces. It also relies on Slicer4J (https://github.com/resess/Slicer4J) to compute control and data-flow dependencies. 
-To prevent any inconsistencies between the tool versions that we used and newer versions, 
+InPreSS relies on the TRegression (ERASE) (https://github.com/llmhyy/tregression) project to align the two traces. 
+It also relies on Slicer4J (https://github.com/resess/Slicer4J) to compute control and data-flow dependencies. 
+As these projects are developing separately, to prevent any inconsistencies between the tool versions that we used and newer versions, 
 we included the repositories of Slicer4J, ERASE, and its underlying Microbat (https://github.com/llmhyy/microbat) project.
 
 1. Start with cloning the repository:
@@ -110,5 +120,5 @@ The structure of Defects4J is as follows:
 
 You can run each bugs similar to running our subjects. 
 
----
+
 

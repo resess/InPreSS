@@ -31,11 +31,10 @@ public class run {
 
 		System.out.println("working on the " + bugID + "th bug of " + projectName + " project.");
 		projConfig config = projConfig.getD4JConfig(projectName, Integer.valueOf(bugID));	
-		String EraseorDual = projConfig.getSliceConfig(projectName);
 		List<String> includedClassNames = new ArrayList<>();
 		List<String> excludedClassNames = new ArrayList<>();
 		generatoror.generateResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, 
-				true, true, true, 3, true, true, config, testcase, includedClassNames,excludedClassNames, EraseorDual);
+				true, true, true, 3, true, true, config, testcase, includedClassNames,excludedClassNames, config.EraseorDual);
 	    return;
 
 	}	

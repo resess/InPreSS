@@ -1653,10 +1653,10 @@ public class dualSlicingWithErease {
 		System.out.println("New trace size is " + newTrace.getExecutionList().size());
 		System.out.println("Old dual size is " + old_visited.size());
 		System.out.println("New dual size is " + new_visited.size());
-		System.out.println("Old retained size is " + old_retained.size());
-		System.out.println("New retained size is " + new_retained.size());
-		System.out.println("Old inPreSS size is " + old_kept.size());
-		System.out.println("New inPreSS size is " + new_kept.size());
+		System.out.println("Old retained size (removing test that are removed by DS) is " + old_retained.size());
+		System.out.println("New retained size (removing test that are removed by DS) is " + new_retained.size());
+		System.out.println("Old InPreSS size (removing test that are removed by DS) is " + old_kept.size());
+		System.out.println("New InPreSS size (removing test that are removed by DS) is " + new_kept.size());
 		
 		int oldAllRetained = old_retained.size()-oldRetainedTestRemovedByDual;
 		int newAllRetained = new_retained.size()-newRetainedTestRemovedByDual;

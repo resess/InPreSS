@@ -2105,7 +2105,6 @@ public class dualSlicingWithSlicer4J {
 			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
 			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual) {
 	
-			
 			System.out.println("Old trace size is " + oldTrace.getExecutionList().size());
 			System.out.println("New trace size is " + newTrace.getExecutionList().size());
 			System.out.println("Old dual size is " + old_visited.size());
