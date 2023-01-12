@@ -29,6 +29,7 @@ public class projConfig extends Defects4jProjectConfig{
 	private projConfig(String srcTestFolder, String srcSourceFolder, String bytecodeTestFolder,
 			String bytecodeSourceFolder, String buildFolder, String projectName, int bugID) {
 		super(srcTestFolder,srcSourceFolder,bytecodeTestFolder,bytecodeSourceFolder,buildFolder,projectName,bugID);
+		this.EraseorDual = "E";
 	}
 	public static projConfig getD4JConfig(String projectName, int bugID) {
 		projConfig config = null;

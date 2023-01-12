@@ -803,15 +803,15 @@ public class dualSlicingWithSlicer4J {
 			    	   HashMap<Pair<TraceNode, String>, String> corresponding_deps = new HashMap<>();//the deps of corresponding nodes 			       
 
 			    		   if(isNew) { 
-			    			   if(bugID.contentEquals("1"))
-			    			      corresponding_deps = getSlicer4JDirectDependencies(OthercashDeps, Slicer4JMapping, Slicer4JBytecodeMapping, corresponding, !isNew, old_dcfg, old_slicer); 
-			    			   else
+//			    			   if(bugID.contentEquals("1"))
+//			    			      corresponding_deps = getSlicer4JDirectDependencies(OthercashDeps, Slicer4JMapping, Slicer4JBytecodeMapping, corresponding, !isNew, old_dcfg, old_slicer); 
+//			    			   else
 			    				  corresponding_deps = getSlicer4JDirectDependencies(OthercashDeps, OtherSlicer4JMapping, otherSlicer4JBytecodeMapping, corresponding, !isNew, old_dcfg, old_slicer);			    			   
 			    		   }else {
-			    			   if(bugID.contentEquals("1"))
-			    			     corresponding_deps = getSlicer4JDirectDependencies(cashDeps, Slicer4JMapping, Slicer4JBytecodeMapping, corresponding, isNew, new_dcfg, new_slicer); 
-			    			   else
-			    				 corresponding_deps = getSlicer4JDirectDependencies(OthercashDeps, OtherSlicer4JMapping, otherSlicer4JBytecodeMapping, corresponding, isNew, new_dcfg, new_slicer);			    			   
+//			    			   if(bugID.contentEquals("1"))
+//			    			     corresponding_deps = getSlicer4JDirectDependencies(cashDeps, Slicer4JMapping, Slicer4JBytecodeMapping, corresponding, isNew, new_dcfg, new_slicer); 
+//			    			   else
+			    				 corresponding_deps = getSlicer4JDirectDependencies(OthercashDeps, OtherSlicer4JMapping, otherSlicer4JBytecodeMapping, corresponding, !isNew, new_dcfg, new_slicer);			    			   
 			    		   }
 			    	   boolean found = false; 
 			    	   for(Pair<TraceNode, String> dd: corresponding_deps.keySet()){
