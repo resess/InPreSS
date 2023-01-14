@@ -21,7 +21,7 @@ public class projConfig extends Defects4jProjectConfig{
 	
 	public String projectName;
 	public int bugID;
-	public String EraseorDual;
+	public String configFile;
 	
 	public String rootPath = ""+File.separator+"home"+File.separator+"linyun"+File.separator+"doc"+File.separator+"git_space"+File.separator+"defects4j"+File.separator+"framework"+File.separator+"bin"+File.separator+"defects4j";
 	//public String javaHome = Activator.getDefault().getPreferenceStore().getString(MicrobatPreference.JAVA7HOME_PATH);
@@ -29,7 +29,7 @@ public class projConfig extends Defects4jProjectConfig{
 	private projConfig(String srcTestFolder, String srcSourceFolder, String bytecodeTestFolder,
 			String bytecodeSourceFolder, String buildFolder, String projectName, int bugID) {
 		super(srcTestFolder,srcSourceFolder,bytecodeTestFolder,bytecodeSourceFolder,buildFolder,projectName,bugID);
-		this.EraseorDual = "E";
+		this.configFile = "E";
 	}
 	public static projConfig getD4JConfig(String projectName, int bugID) {
 		projConfig config = null;
@@ -38,39 +38,39 @@ public class projConfig extends Defects4jProjectConfig{
 		if (projectName.equals("InPreSS")) {
 			if(bugID==1){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "E";
+				config.configFile = "E";
 			}
 			else if(bugID==2){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "S";
+				config.configFile = "S";
 			}
 			else if(bugID==3){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "S";
+				config.configFile = "S";
 			}
 			else if(bugID==4){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "S";
+				config.configFile = "S";
 			}
 			else if(bugID==5){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "E";
+				config.configFile = "E";
 			}
 			else if(bugID==6){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "S";			
+				config.configFile = "S";			
 			}
 			else if(bugID==7){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "S";
+				config.configFile = "S";
 			}
 			else if(bugID==8){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "S";
+				config.configFile = "S";
 			}
 			else if(bugID==9){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.EraseorDual = "S";
+				config.configFile = "S";
 			}
 		}
 		if (projectName.equals("Toy")) {

@@ -34,7 +34,7 @@ public class run {
 		List<String> includedClassNames = new ArrayList<>();
 		List<String> excludedClassNames = new ArrayList<>();
 		generatoror.generateResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, 
-				true, true, true, 3, true, true, config, testcase, includedClassNames,excludedClassNames, config.EraseorDual);
+				true, true, true, 3, true, true, config, testcase, includedClassNames,excludedClassNames, config.configFile);
 	    return;
 
 	}	

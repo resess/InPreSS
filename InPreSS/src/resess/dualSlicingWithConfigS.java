@@ -48,7 +48,7 @@ import tregression.model.PairList;
 import tregression.model.TraceNodePair;
 import tregression.separatesnapshots.DiffMatcher;
 
-public class dualSlicingWithSlicer4J {
+public class dualSlicingWithConfigS {
 	public int findStartOrderInOtherTrace(TraceNode problematicStep, PairList pairList, boolean isOnBeforeTrace) {
 		TraceNode node = problematicStep.getStepInPrevious();
 		while (node != null) {
@@ -138,8 +138,6 @@ public class dualSlicingWithSlicer4J {
 		TraceNode bestNode = null;
 		int value = -1;
 
-		// TODO this implementation is problematic, I need to use soot to analyze the
-		// static control dependence relation.
 		TraceNode temp = null;
 		for (int i = endOrder; i >= startOrder; i--) {
 			if (i <= otherTrace.size()) {

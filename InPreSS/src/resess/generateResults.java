@@ -144,12 +144,12 @@ public class generateResults {
 		
 		System.out.println("###############Dual slicing##################");
 		if (eraseorDual.equals("S")){
-			dualSlicingWithSlicer4J slicer4J = new dualSlicingWithSlicer4J();
-			slicer4J.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList());	
+			dualSlicingWithConfigS configS = new dualSlicingWithConfigS();
+			configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList());	
 		}
 		else if (eraseorDual.equals("E")){
-			dualSlicingWithErease Erease = new dualSlicingWithErease();
-			Erease.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime);
+			dualSlicingWithConfigE configE = new dualSlicingWithConfigE();
+			configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList());
 		}
 		
 		return;

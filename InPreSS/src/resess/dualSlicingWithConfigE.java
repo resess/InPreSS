@@ -33,12 +33,13 @@ import sav.common.core.Pair;
 import soot.ValueBox;
 import tregression.StepChangeType;
 import tregression.StepChangeTypeChecker;
+import tregression.empiricalstudy.RootCauseNode;
 import tregression.empiricalstudy.TestCase;
 import tregression.model.PairList;
 import tregression.model.TraceNodePair;
 import tregression.separatesnapshots.DiffMatcher;
 
-public class dualSlicingWithErease {
+public class dualSlicingWithConfigE {
 	private boolean isMatchable(TraceNode invocationParent, PairList pairList, boolean isOnBefore) {
 		if(isOnBefore){
 			TraceNodePair pair = pairList.findByBeforeNode(invocationParent);
@@ -210,7 +211,6 @@ public class dualSlicingWithErease {
 		TraceNode bestNode = null;
 		int value = -1;
 		
-		//TODO this implementation is problematic, I need to use soot to analyze the static control dependence relation.
 		TraceNode temp = null;
 		for(int i=endOrder; i>=startOrder; i--){
 			if(i<=otherTrace.size()) {
@@ -282,7 +282,7 @@ public class dualSlicingWithErease {
 	}
 	public void dualSlicing(String basePath, String projectName, String bugID, TestCase tc,
 			boolean slicer4J, String proPath, TraceNode observedFaultNode, Trace newTrace, Trace oldTrace, PairList dualPairList, PairList inPreSSPairList, 
-			DiffMatcher matcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime ) throws IOException {
+			DiffMatcher matcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime,  List<RootCauseNode> rootList ) throws IOException {
 
 		List<TraceNode> new_workList = new ArrayList<>();
 		List<TraceNode> new_visited = new ArrayList<>();
