@@ -10,10 +10,10 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/sav.commons"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/tregression"/>
 	<classpathentry kind="lib" path="/microbat/lib/org.eclipse.jdt.core-3.10.0.jar"/>
-	<classpathentry kind="lib" path="lib/core-jar-with-dependencies.jar"/>
-	<classpathentry kind="lib" path="lib/slicer4j-jar-with-dependencies.jar"/>
-	<classpathentry kind="lib" path="lib/soot-infoflow-android-trunk-jar-with-dependencies.jar"/>
-	<classpathentry kind="lib" path="lib/soot-infoflow-trunk.jar"/>
-	<classpathentry kind="lib" path="lib/soot-infoflow-trunk-jar-with-dependencies.jar"/>
+	<classpathentry kind="lib" path="deps/lib/core-jar-with-dependencies.jar"/>
+	<classpathentry kind="lib" path="deps/lib/slicer4j-jar-with-dependencies.jar"/>
+	<classpathentry kind="lib" path="deps/lib/soot-infoflow-android-trunk-jar-with-dependencies.jar"/>
+	<classpathentry kind="lib" path="deps/lib/soot-infoflow-trunk.jar"/>
+	<classpathentry kind="lib" path="deps/lib/soot-infoflow-trunk-jar-with-dependencies.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

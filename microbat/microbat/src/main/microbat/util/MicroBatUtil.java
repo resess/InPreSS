@@ -148,8 +148,9 @@ public class MicroBatUtil {
 //		String dropinsDir = IResourceUtils.getDropinsDir();
 //		String dropinsDir = "/Applications/Eclipse.app/Contents/Eclipse/dropins";
 //		String dropinsDir = "/data/shrbadihi/projects/client_library/libre/dropins";
-		Path currRelativePath = Paths.get("");
-		String dropinsDir = currRelativePath.toAbsolutePath().toString()+"/lib";
+//		Path currRelativePath = Paths.get("");
+//		String dropinsDir = currRelativePath.toAbsolutePath().toString()+"/lib";
+		String dropinsDir = System.getProperty("user.dir")+"/deps/lib";
 //        System.out.println(currRelativePath.toAbsolutePath().getParent().toString());
 
 		

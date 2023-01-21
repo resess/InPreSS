@@ -37,7 +37,7 @@ public class generateResults {
 	public void generateResult(String basePath, String projectName, String bugID, String proPath, String buggyPath, String fixPath, 
 			boolean isReuse, boolean useSliceBreaker,
 			boolean enableRandom, int breakLimit, boolean requireVisualization, 
-			boolean allowMultiThread, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual) {
+			boolean allowMultiThread, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual, boolean debug) {
 		List<TestCase> tcList;
 		TestCase workingTC = null;
 		try {
@@ -50,7 +50,7 @@ public class generateResults {
 				workingTC = tc;				 
 				analyzeTestCaseResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, isReuse, allowMultiThread,tc, 
 						config, requireVisualization, true, useSliceBreaker, enableRandom, breakLimit, 
-						includedClassNames, excludedClassNames, eraseorDual);		
+						includedClassNames, excludedClassNames, eraseorDual,debug);		
 			    System.exit(0);
 			}
 
@@ -63,7 +63,7 @@ public class generateResults {
 			boolean isReuse, boolean allowMultiThread, 
 			TestCase tc, Defects4jProjectConfig config, boolean requireVisualization, 
 			boolean isRunInTestCaseMode, boolean useSliceBreaker, boolean enableRandom, int breakLimit, List<String> includedClassNames, 
-			List<String> excludedClassNames, String eraseorDual) throws SimulationFailException, IOException {
+			List<String> excludedClassNames, String eraseorDual,boolean debug) throws SimulationFailException, IOException {
 		TraceCollector0 newCollector = new TraceCollector0(true);
 		TraceCollector0 oldCollector = new TraceCollector0(false);
 
@@ -138,18 +138,18 @@ public class generateResults {
 		Simulator simulator = new Simulator(useSliceBreaker, enableRandom, breakLimit);
 //		simulator.prepare(newTrace, oldTrace, inPreSSPairList, diffMatcher);//parents in getObservedFault
 		simulator.prepare(newTrace, oldTrace, dualPairList, diffMatcher);//parents in getObservedFault
-		System.out.println(simulator.getObservedFault());
+		//System.out.println(simulator.getObservedFault());
 		TraceNode observedFaultNode = simulator.getObservedFault();
 		
 		
 		System.out.println("###############Dual slicing##################");
 		if (eraseorDual.equals("S")){
 			dualSlicingWithConfigS configS = new dualSlicingWithConfigS();
-			configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList());	
+			configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
 		}
 		else if (eraseorDual.equals("E")){
 			dualSlicingWithConfigE configE = new dualSlicingWithConfigE();
-			configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList());
+			configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
 		}
 		
 		return;

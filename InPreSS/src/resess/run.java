@@ -8,6 +8,7 @@ import java.util.List;
 public class run {
 
 	public static void main(String[] args) {
+		 boolean debug = false;
 
 		generateResults generatoror = new generateResults();
 		
@@ -33,8 +34,9 @@ public class run {
 		projConfig config = projConfig.getD4JConfig(projectName, Integer.valueOf(bugID));	
 		List<String> includedClassNames = new ArrayList<>();
 		List<String> excludedClassNames = new ArrayList<>();
+	   
 		generatoror.generateResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, 
-				true, true, true, 3, true, true, config, testcase, includedClassNames,excludedClassNames, config.configFile);
+				true, true, true, 3, true, true, config, testcase, includedClassNames,excludedClassNames, config.configFile,debug);
 	    return;
 
 	}	

@@ -67,17 +67,17 @@ public class Simulator  {
 		System.currentTimeMillis();
 		if(firstTearDownNode!=null){
 			node = firstTearDownNode.getStepInPrevious();
-			System.out.println("debug node:"+node);
+//			System.out.println("debug node:"+node);
 		}
 		
 		while(node != null) {
-			System.out.println("debug node is:" +node);
+//			System.out.println("debug node is:" +node);
 			StepChangeType changeType = checker.getType(node, true, pairList, matcher);
 			//System.out.println("debug node: "+node);
 			//System.out.println("debug node type: "+changeType.getType());
 			if(changeType.getType()==StepChangeType.CTL) {
 				TraceNode cDom = node.getInvocationMethodOrDominator();
-				System.out.println("debug node dominator:" +cDom);
+//				System.out.println("debug node dominator:" +cDom);
 				if(cDom==null){
 					if(node.isException()) {
 						return node;
@@ -185,10 +185,10 @@ public class Simulator  {
 		this.matcher = matcher;
 		
 		TraceNode initialStep = buggyTrace.getLatestNode();
-		System.out.println("debug: initial step "+ initialStep);
+//		System.out.println("debug: initial step "+ initialStep);
 		TraceNode lastObservableFault = findObservedFault(initialStep, buggyTrace, correctTrace);
 		//TraceNode lastObservableFault = findAsserttion(buggyTrace, "testSingletonListWithSimpleObject", "176");
-		System.out.println("debug: last observable "+ lastObservableFault);//assertion
+//		System.out.println("debug: last observable "+ lastObservableFault);//assertion
 		
 		if(lastObservableFault!=null){
 
@@ -196,7 +196,7 @@ public class Simulator  {
 
 			StepChangeTypeChecker checker = new StepChangeTypeChecker(buggyTrace, correctTrace);
 			TraceNode node = lastObservableFault.getStepOverPrevious();
-			System.out.println("debug: last getStepOverPrevious "+ node);
+//			System.out.println("debug: last getStepOverPrevious "+ node);
 			
 			int times = 100;//debug: magic number 5=>100
 			while(observedFaultList.size() < times && node!= null){
@@ -206,7 +206,7 @@ public class Simulator  {
 					observedFaultList.add(node);
 				}
 				node = node.getStepOverPrevious();
-				System.out.println("debug: last getStepOverPrevious "+ node);
+//				System.out.println("debug: last getStepOverPrevious "+ node);
 			}
 		}
 	}
