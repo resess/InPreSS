@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<component name="org.eclipse.core.runtime_3.18.0.v20200506-2143" version="1.2">
+    <plugin id="org.eclipse.core.runtime_3.18.0.v20200506-2143"/>
+    <package name="org.eclipse.core.runtime" visibility="1">
+        <type name="ILibrary" restrictions="11"/>
+        <type name="ILog" restrictions="1"/>
+        <type name="IPlatformRunnable" restrictions="9"/>
+        <type name="IPluginPrerequisite" restrictions="11"/>
+        <type name="IPluginRegistry" restrictions="11"/>
+        <type name="Platform" restrictions="0">
+            <method name="getJobManager" restrictions="8" signature="()Lorg/eclipse/core/runtime/jobs/IJobManager;"/>
+        </type>
+        <type name="Preferences" restrictions="2"/>
+    </package>
+</component>

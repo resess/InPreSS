@@ -369,8 +369,9 @@ public class dualSlicingWithConfigE {
 		List<TraceNode> old_retained = new ArrayList<>();		
 		List<TraceNode> new_retained = new ArrayList<>();
 
-		addingClientTestNodes(tc, oldTrace.getExecutionList(), newTrace.getExecutionList(), old_kept, new_kept, old_retained, new_retained);		
-		//addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained);
+//		addingClientTestNodes(tc, oldTrace.getExecutionList(), newTrace.getExecutionList(), old_kept, new_kept, old_retained, new_retained);
+		//keep statements in the test that are kept in dual slice:
+		addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained);
 		int oldRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, oldTrace.getExecutionList(),old_visited);
 		int newRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, newTrace.getExecutionList(),new_visited);
 		
@@ -390,20 +391,20 @@ public class dualSlicingWithConfigE {
 				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
 		else {
-			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
-				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
-						oldCommonChunkInfo, newCommonChunkInfo,
-						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
-			}		
-			else {
+//			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
+//				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+//						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+//						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+//						oldCommonChunkInfo, newCommonChunkInfo,
+//						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+//			}		
+//			else 
 				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
 				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
 				oldCommonChunkInfo, newCommonChunkInfo,
 				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
-			}
+			
 		}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1687,19 +1688,23 @@ public class dualSlicingWithConfigE {
 		System.out.println("New trace size is " + newTrace.getExecutionList().size());
 		System.out.println("Old dual size is " + old_visited.size());
 		System.out.println("New dual size is " + new_visited.size());
-		System.out.println("Old retained size (removing test that are removed by DS) is " + old_retained.size());
-		System.out.println("New retained size (removing test that are removed by DS) is " + new_retained.size());
-		System.out.println("Old InPreSS size (removing test that are removed by DS) is " + old_kept.size());
-		System.out.println("New InPreSS size (removing test that are removed by DS) is " + new_kept.size());
+//		System.out.println("Old retained size (removing test that are removed by DS) is " + old_retained.size());
+//		System.out.println("New retained size (removing test that are removed by DS) is " + new_retained.size());
+//		System.out.println("Old InPreSS size (removing test that are removed by DS) is " + old_kept.size());
+//		System.out.println("New InPreSS size (removing test that are removed by DS) is " + new_kept.size());
 		
-		int oldAllRetained = old_retained.size()-oldRetainedTestRemovedByDual;
-		int newAllRetained = new_retained.size()-newRetainedTestRemovedByDual;
-		int oldAllinPreSSRetained = old_kept.size() - oldRetainedTestRemovedByDual;
-		int newAllinPreSSRetained = new_kept.size() - newRetainedTestRemovedByDual;
-		System.out.println("Old retained size (removing test that are removed by DS) is " + oldAllRetained);
-		System.out.println("New retained size (removing test that are removed by DS) is " + newAllRetained);
-		System.out.println("Old inPreSS size (removing test that are removed by DS) is " + oldAllinPreSSRetained);
-		System.out.println("New inPreSS size (removing test that are removed by DS) is " + newAllinPreSSRetained);
+//		int oldAllRetained = old_retained.size()-oldRetainedTestRemovedByDual;
+//		int newAllRetained = new_retained.size()-newRetainedTestRemovedByDual;
+//		int oldAllinPreSSRetained = old_kept.size() - oldRetainedTestRemovedByDual;
+//		int newAllinPreSSRetained = new_kept.size() - newRetainedTestRemovedByDual;
+		int oldAllRetained = old_retained.size();
+		int newAllRetained = new_retained.size();
+		int oldAllinPreSSRetained = old_kept.size();
+		int newAllinPreSSRetained = new_kept.size();
+//		System.out.println("Old retained size (removing test that are removed by DS) is " + oldAllRetained);
+//		System.out.println("New retained size (removing test that are removed by DS) is " + newAllRetained);
+//		System.out.println("Old inPreSS size (removing test that are removed by DS) is " + oldAllinPreSSRetained);
+//		System.out.println("New inPreSS size (removing test that are removed by DS) is " + newAllinPreSSRetained);
 		
 	//	int OldTraceSourceSize = getTheSourceSize(oldTrace.getExecutionList());
 	//	int NewTraceSourceSize = getTheSourceSize(newTrace.getExecutionList());
@@ -2067,8 +2072,8 @@ public class dualSlicingWithConfigE {
 		    /////////////////#######////#######////#######////#######////#######////#######
 		    /////////////////#######////#######////#######////#######////#######////#######
 		    /////////////////#######////#######////#######////#######////#######////#######
-			double oldReduction = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(old_visited.size()))/(Double.valueOf(oldTrace.getExecutionList().size()));
-			double newReduction = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(new_visited.size()))/(Double.valueOf(newTrace.getExecutionList().size()));
+			double oldReduction = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(old_visited.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
+			double newReduction = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(new_visited.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
 		    if (!tempFile.exists()) {
 		        FirstTime=true;
 		        XSSFWorkbook workbook = new XSSFWorkbook();
@@ -2099,8 +2104,8 @@ public class dualSlicingWithConfigE {
 		    /////////////////#######////#######////#######////#######////#######////#######
 		    /////////////////#######////#######////#######////#######////#######////#######
 		    /////////////////#######////#######////#######////#######////#######////#######
-		    oldReduction = (Double.valueOf(old_visited.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(old_visited.size()));
-			newReduction = (Double.valueOf(new_visited.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(new_visited.size()));
+		    oldReduction = (Double.valueOf(old_visited.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(old_visited.size()))*100.0;
+			newReduction = (Double.valueOf(new_visited.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(new_visited.size()))*100.0;
 			
 		    if (FirstTime) {		    	
 		        String[] header = {"Bug ID", 
@@ -2342,10 +2347,10 @@ public class dualSlicingWithConfigE {
 			}
 			newCTLInPreSSAvg = newCTLInPreSSSum/newCtlBlockNodes.keySet().size();		
 		    
-		    double reducOldData =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldCTLDualSum+oldDATInPreSSSum))/(Double.valueOf(old_visited.size()));
-		    double reducOldCTL =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldDATDualSum+oldCTLInPreSSSum))/(Double.valueOf(old_visited.size()));
-		    double reducNewData =  (Double.valueOf(new_visited.size())-(new_retained.size()+newCTLDualSum+newDATInPreSSSum))/(Double.valueOf(new_visited.size()));
-		    double reducNewCTL =  (Double.valueOf(new_visited.size())-(new_retained.size()+newDATDualSum+newCTLInPreSSSum))/(Double.valueOf(new_visited.size()));
+		    double reducOldData =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldCTLDualSum+oldDATInPreSSSum))/(Double.valueOf(old_visited.size()))*100.0;
+		    double reducOldCTL =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldDATDualSum+oldCTLInPreSSSum))/(Double.valueOf(old_visited.size()))*100.0;
+		    double reducNewData =  (Double.valueOf(new_visited.size())-(new_retained.size()+newCTLDualSum+newDATInPreSSSum))/(Double.valueOf(new_visited.size()))*100.0;
+		    double reducNewCTL =  (Double.valueOf(new_visited.size())-(new_retained.size()+newDATDualSum+newCTLInPreSSSum))/(Double.valueOf(new_visited.size()))*100.0;
 		    
 		    String[] detailedDataRQ2 = {bugID, 
 		    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(oldDATDualAvg),String.valueOf(oldDATDualMax),String.valueOf(reducOldData),
@@ -2353,6 +2358,7 @@ public class dualSlicingWithConfigE {
 		    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(newDATDualAvg),String.valueOf(newDATDualMax) ,String.valueOf(reducNewData),
 		    		String.valueOf(newCtlBlockNodes.keySet().size()),String.valueOf(newCTLDualAvg),String.valueOf(newCTLDualMax), String.valueOf(reducNewCTL),};
 		       WriteToExcel(results,detailedDataRQ2,"RQ2",true,false);
+		    
 			
 			System.out.println("##############Finish##############");
 						
