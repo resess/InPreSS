@@ -371,7 +371,7 @@ public class dualSlicingWithConfigE {
 
 //		addingClientTestNodes(tc, oldTrace.getExecutionList(), newTrace.getExecutionList(), old_kept, new_kept, old_retained, new_retained);
 		//keep statements in the test that are kept in dual slice:
-		addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained);
+//		addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained);
 		int oldRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, oldTrace.getExecutionList(),old_visited);
 		int newRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, newTrace.getExecutionList(),new_visited);
 		
@@ -391,14 +391,17 @@ public class dualSlicingWithConfigE {
 				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
 		else {
-//			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
-//				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-//						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-//						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
-//						oldCommonChunkInfo, newCommonChunkInfo,
-//						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
-//			}		
-//			else 
+			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
+				PrintD4JPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+						oldCommonChunkInfo, newCommonChunkInfo,
+						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+				PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+			}		
+			else 
 				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
 				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
@@ -866,7 +869,7 @@ public class dualSlicingWithConfigE {
 			//System.out.println("step on old is: " + step);	
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
 			//if ((changeType.getType()!=StepChangeType.DAT || i==old_visited.size()-1) && changeType.getType()!=StepChangeType.CTL) { //separate the blocks
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || isATestStatement(tc, step) ) { //it is retain		
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { //it is retain		
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {//coming from a data block
@@ -924,7 +927,7 @@ public class dualSlicingWithConfigE {
 			//System.out.println("step on new is: " + step);	
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
 			//if ((changeType.getType()!=StepChangeType.DAT || i==new_visited.size()-1) && changeType.getType()!=StepChangeType.CTL) { //separate the blocks
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || isATestStatement(tc, step) ) { //separate the blocks				
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (isATestStatement(tc, step) && isLastStatement(tc, step,new_visited))) { //separate the blocks				
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {//coming from a data block
@@ -1030,7 +1033,7 @@ public class dualSlicingWithConfigE {
 		for(int i=old_visited.size()-1;i>=0; i--){
 			TraceNode step = old_visited.get(i);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || isATestStatement(tc, step) ) { //separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { //separate the blocks
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {//coming from a data block
@@ -1158,8 +1161,8 @@ public class dualSlicingWithConfigE {
 				TraceNode step = old_visited.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);				
 				String Type;
-				//System.out.println("on old " + step + " "+ changeType.toString());
-				if(changeType.getType()==StepChangeType.DAT && !isATestStatement(tc, step)) {
+//				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
+				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {
 					old_data_node_function.put(step, index);
 					TraceNode matchedStep = changeType.getMatchingStep();	
 					new_data_node_function.put(matchedStep, index);
@@ -1169,15 +1172,16 @@ public class dualSlicingWithConfigE {
 							new_dat_kept.add(matchedStep);
 					}					
 				}
-				else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
+				//else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
+				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {
 					old_ctl_node_function.put(step, index);
 					index = index + 1;
 				}
-				else {//it is retain
+				else if(changeType.getType()!=0) {//not identical
 					if(!old_retained.contains(step))
 						old_retained.add(step);
 					if(!old_kept.contains(step))
-						old_kept.add(step);
+						old_kept.add(step);					
 				}
 				List<Pair<TraceNode, String>> data_deps = old_data_map.get(step);				
 				if(data_deps!=null) 
@@ -1200,7 +1204,8 @@ public class dualSlicingWithConfigE {
 				TraceNode step = new_visited.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);				
 				String Type;				
-				if(changeType.getType()==StepChangeType.DAT && !isATestStatement(tc, step)) {
+//				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
+				if (changeType.getType() == StepChangeType.DAT && !isLastStatement(tc, step, new_visited)) {
 					if (!new_data_node_function.keySet().contains(step)) {
 						new_data_node_function.put(step, index);
 						TraceNode matchedStep = changeType.getMatchingStep();	
@@ -1213,11 +1218,12 @@ public class dualSlicingWithConfigE {
 							old_dat_kept.add(matchedStep);
 					}					
 				}
-				else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
+//				 else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
+				else if (changeType.getType() == StepChangeType.CTL && !isLastStatement(tc, step, new_visited)) {
 					new_ctl_node_function.put(step, index);
 					index = index + 1;
 				}
-				else {				
+				else if(changeType.getType()!=0) {//not identical				
 					if(!new_retained.contains(step)) {				
 						new_retained.add(step);
 					}
@@ -1244,6 +1250,8 @@ public class dualSlicingWithConfigE {
 			/////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////
 	//Add test statements becasue they are in the dual slice//////
+//			System.out.println(old_dat_kept.size());
+//			System.out.println(new_dat_kept.size());
 			for(TraceNode n: old_dat_kept) {
 				if(!old_kept.contains(n)) {
 				  old_kept.add(n);
@@ -1254,6 +1262,17 @@ public class dualSlicingWithConfigE {
 				  new_kept.add(n);
 				}
 			}
+			if (old_kept.size()==0) {				
+			    old_kept.add(old_visited.get(old_visited.size()-1));
+//			    if(!old_retained.contains(old_visited.get(old_visited.size()-1)))
+//			    	old_retained.add(old_visited.get(old_visited.size()-1));
+			}
+			if (new_kept.size()==0) {		
+			    new_kept.add(new_visited.get(new_visited.size()-1));
+//			    if(!new_retained.contains(new_visited.get(new_visited.size()-1)))
+//			    	new_retained.add(new_visited.get(new_visited.size()-1));
+			}
+					
 	//		Collections.sort(old_visited, new TraceNodeOrderComparator());
 	//		Collections.sort(new_visited, new TraceNodeOrderComparator());
 			Collections.sort(old_kept, new TraceNodeOrderComparator());
@@ -1266,10 +1285,10 @@ public class dualSlicingWithConfigE {
 			for(int i=old_kept.size()-1;i>=0; i--){
 				TraceNode step = old_kept.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-				String Type;
+//				String Type;
 				if(changeType.getType()==StepChangeType.DAT && !isATestStatement(tc, step)) {
 					//if (old_kept.contains(step) || old_dat_kept.contains(step)) {//should be added but abstracted					
-						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
+//						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();
 						List<String> vars = new ArrayList<>(); 
 						List<TraceNode> visited = new ArrayList<>();
@@ -1303,15 +1322,15 @@ public class dualSlicingWithConfigE {
 							abstraction = abstraction + ");";
 							
 						}
-						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";					
-						String fixNode = step.toString();	
+//						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";					
+//						String fixNode = step.toString();	
 //						writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");										
 						fileWriter.println(abstraction);
 									
 				}
 				else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
 					//if (old_kept.contains(step)) {//should be added but abstracted					
-						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
+//						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();					
 						List<String> vars = new ArrayList<>(); 
 						List<TraceNode> visited = new ArrayList<>();
@@ -1345,24 +1364,24 @@ public class dualSlicingWithConfigE {
 									abstraction = abstraction + vars.get(j);
 							}
 							abstraction = abstraction + ");";
-							String fixNode = step.toString();	
+//							String fixNode = step.toString();	
 //							writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");
 							//abstraction = getSourceCode(step, false, matcher, oldSlicer4J, oldSlicer4JBytecodeMapping);							
 						}
-						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
-						String fixNode = step.toString();	
+//						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
+//						String fixNode = step.toString();	
 //						writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");
 						fileWriter.println(abstraction);										
 					
 				}
 				else {//retained set 				
-					if (changeType.getType()==StepChangeType.SRCDAT || i==old_visited.size()-1) 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
-					else if (changeType.getType()==StepChangeType.SRCCTL) 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					
-					else //(changeType.getType()==StepChangeType.IDT)
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					
-					String fixNode = step.toString();			
+//					if (changeType.getType()==StepChangeType.SRCDAT || i==old_visited.size()-1) 
+//						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
+//					else if (changeType.getType()==StepChangeType.SRCCTL) 
+//						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					
+//					else //(changeType.getType()==StepChangeType.IDT)
+//						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					
+//					String fixNode = step.toString();			
 //					writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+"\"];");										
 					fileWriter.println(getSourceCode(step, false, matcher));//add the node itself
 				}	
@@ -1378,11 +1397,11 @@ public class dualSlicingWithConfigE {
 			for(int i=new_kept.size()-1;i>=0; i--){
 				TraceNode step = new_kept.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-				String Type;
+//				String Type;
 				if(changeType.getType()==StepChangeType.DAT && !isATestStatement(tc, step)) {
 					//if (new_kept.contains(step) || new_dat_kept.contains(step)) {//should be added but abstracted
 						//ABSTRACTION 						
-						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
+//						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();
 						List<String> vars = new ArrayList<>(); 
 						List<TraceNode> visited = new ArrayList<>();
@@ -1416,15 +1435,15 @@ public class dualSlicingWithConfigE {
 							abstraction = abstraction + ");";
 							//abstraction = getSourceCode(step, true, matcher, newSlicer4J, newSlicer4JBytecodeMapping);
 						}
-						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";					
-						String fixNode = step.toString();	
+//						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";					
+//						String fixNode = step.toString();	
 //						writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");										
 						fileWriter.println(abstraction);
 					
 				}
 				else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
 					if (new_kept.contains(step)) {//should be added but abstracted					
-						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
+//						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();
 						List<ValueBox> writtenSoot = new ArrayList<>();
 						List<String> vars = new ArrayList<>(); 
@@ -1470,20 +1489,20 @@ public class dualSlicingWithConfigE {
 							abstraction = abstraction + ");";
 							//abstraction = getSourceCode(step, true, matcher, newSlicer4J, newSlicer4JBytecodeMapping);
 						}
-						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
-						String fixNode = step.toString();	
+//						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
+//						String fixNode = step.toString();	
 //						writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");										
 						fileWriter.println(abstraction);
 					}
 				}
 				else {//retained set 
-					if (changeType.getType()==StepChangeType.SRCDAT || i==new_visited.size()-1) 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 
-					else if (changeType.getType()==StepChangeType.SRCCTL) 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
-					else //(changeType.getType()==StepChangeType.IDT)
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
-					String fixNode = step.toString();			
+//					if (changeType.getType()==StepChangeType.SRCDAT || i==new_visited.size()-1) 
+//						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 
+//					else if (changeType.getType()==StepChangeType.SRCCTL) 
+//						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
+//					else //(changeType.getType()==StepChangeType.IDT)
+//						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
+//					String fixNode = step.toString();			
 //					writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+"\"];");										
 					fileWriter.println(getSourceCode(step, true, matcher));
 				}
@@ -1496,31 +1515,31 @@ public class dualSlicingWithConfigE {
 	//		Collections.sort(old_kept, new TraceNodeOrderComparator());
 	//		Collections.sort(new_kept, new TraceNodeOrderComparator());
 			
-			for(int i=0;i<old_kept.size(); i++) {
-				if(i!=old_kept.size()-1) {
-					TraceNode step = old_kept.get(i);
-					TraceNode BeforeStep = old_kept.get(i+1);
-//					writer.println("\"OldNode: "+BeforeStep +"\" " + "->" + "\"OldNode: "+step +"\" [color=gray55 style=dotted arrowhead=normal dir=back];");
-				}
-			}
-			for(int i=0;i<new_kept.size(); i++) {
-				if(i!=new_kept.size()-1) {
-					TraceNode step = new_kept.get(i);
-					TraceNode BeforeStep = new_kept.get(i+1);
-//					writer.println("\"NewNode: "+BeforeStep +"\" " + "->" + "\"NewNode: "+step +"\" [color=gray55 style=dotted arrowhead=normal dir=back] ;");
-				}
-			}
+//			for(int i=0;i<old_kept.size(); i++) {
+//				if(i!=old_kept.size()-1) {
+//					TraceNode step = old_kept.get(i);
+//					TraceNode BeforeStep = old_kept.get(i+1);
+////					writer.println("\"OldNode: "+BeforeStep +"\" " + "->" + "\"OldNode: "+step +"\" [color=gray55 style=dotted arrowhead=normal dir=back];");
+//				}
+//			}
+//			for(int i=0;i<new_kept.size(); i++) {
+//				if(i!=new_kept.size()-1) {
+//					TraceNode step = new_kept.get(i);
+//					TraceNode BeforeStep = new_kept.get(i+1);
+////					writer.println("\"NewNode: "+BeforeStep +"\" " + "->" + "\"NewNode: "+step +"\" [color=gray55 style=dotted arrowhead=normal dir=back] ;");
+//				}
+//			}
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			/////////////////////////add alignment edges//////////////////////////////////////////////////////////////////////////////
-			for(int i=0;i<old_kept.size(); i++) {
-				TraceNode step = old_kept.get(i);
-				StepChangeType changeType = typeChecker.getType(step, false, pairList, matcher);
-				TraceNode matchedStep = changeType.getMatchingStep();
-				if(new_kept.contains(matchedStep)) {										
-//					writer.println("\"OldNode: "+step +"\" " + "->" + "\"NewNode: "+matchedStep +"\" [color=grey55 style=dotted arrowhead=none constraint=false];");
-				}
-			}
+//			for(int i=0;i<old_kept.size(); i++) {
+//				TraceNode step = old_kept.get(i);
+//				StepChangeType changeType = typeChecker.getType(step, false, pairList, matcher);
+//				TraceNode matchedStep = changeType.getMatchingStep();
+//				if(new_kept.contains(matchedStep)) {										
+////					writer.println("\"OldNode: "+step +"\" " + "->" + "\"NewNode: "+matchedStep +"\" [color=grey55 style=dotted arrowhead=none constraint=false];");
+//				}
+//			}
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			/////////////////////////add dependency edges////////////////
@@ -1573,6 +1592,15 @@ public class dualSlicingWithConfigE {
 		String ClassName = step.getClassCanonicalName();
 		if (tc.testClass.equals(ClassName)) {
 			return true;
+		}
+		return false;
+	}
+	private boolean isLastStatement(TestCase tc, TraceNode step, List<TraceNode> trace) {
+		String ClassName = step.getClassCanonicalName();
+		if (tc.testClass.equals(ClassName)) {
+			if(trace.get(trace.size()-1).toString().contentEquals(step.toString())) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -1684,10 +1712,10 @@ public class dualSlicingWithConfigE {
 			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
 			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual) {
 		
-		System.out.println("Old trace size is " + oldTrace.getExecutionList().size());
-		System.out.println("New trace size is " + newTrace.getExecutionList().size());
-		System.out.println("Old dual size is " + old_visited.size());
-		System.out.println("New dual size is " + new_visited.size());
+//		System.out.println("Old trace size is " + oldTrace.getExecutionList().size());
+//		System.out.println("New trace size is " + newTrace.getExecutionList().size());
+//		System.out.println("Old dual size is " + old_visited.size());
+//		System.out.println("New dual size is " + new_visited.size());
 //		System.out.println("Old retained size (removing test that are removed by DS) is " + old_retained.size());
 //		System.out.println("New retained size (removing test that are removed by DS) is " + new_retained.size());
 //		System.out.println("Old InPreSS size (removing test that are removed by DS) is " + old_kept.size());
@@ -1723,19 +1751,19 @@ public class dualSlicingWithConfigE {
 	//	System.out.println("New retained size (source-level) is " + NewRetainedSourceSize);
 	//	System.out.println("Old inPreSS size (source-level) is " + OldinPreSSSourceSize);
 	//	System.out.println("New inPreSS size (source-level) is " + NewinPreSSSourceSize);
-		
-		System.out.println("Old #Data B is " + oldDataBlockNodes.keySet().size());
-		System.out.println("New #Data B is " + newDataBlockNodes.keySet().size());
-		System.out.println("Old #Control B is " + oldCtlBlockNodes.keySet().size());
-		System.out.println("New #Control B is " + newCtlBlockNodes.keySet().size());
-		System.out.println("old trace time is " + oldTraceTime);
-		System.out.println("new trace time is " + newTraceTime);
-		System.out.println("code diff " + codeTime);
-		System.out.println("trace diff " + traceTime);
-		System.out.println("dual time is " + dualTime);
-		System.out.println("inPreSS time is " + inPreSSTime);
+//		
+//		System.out.println("Old #Data B is " + oldDataBlockNodes.keySet().size());
+//		System.out.println("New #Data B is " + newDataBlockNodes.keySet().size());
+//		System.out.println("Old #Control B is " + oldCtlBlockNodes.keySet().size());
+//		System.out.println("New #Control B is " + newCtlBlockNodes.keySet().size());
+//		System.out.println("old trace time is " + oldTraceTime);
+//		System.out.println("new trace time is " + newTraceTime);
+//		System.out.println("code diff " + codeTime);
+//		System.out.println("trace diff " + traceTime);
+//		System.out.println("dual time is " + dualTime);
+//		System.out.println("inPreSS time is " + inPreSSTime);
 	    
-		String results = basePath+"/results/"+projectName+".xlsx";
+		String results = basePath+"/results/"+projectName+"Detailed.xlsx";
 	    File tempFile = new File(results);
 	    boolean FirstTime = false;
 	    if (!tempFile.exists()) {//For the first time
@@ -1779,10 +1807,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		oldCommonBlockAvg = oldCommonBlockSum/oldCommonChunkInfo.keySet().size();
-		System.out.println("Old Common block size (sum): " + oldCommonBlockSum);
-		System.out.println("Old dCommon block size (avg) " + oldCommonBlockAvg);
-		System.out.println("Old Common block size (min): " + oldCommonBlockMin);
-		System.out.println("Old Common block size (max) " + oldCommonBlockMax);
+//		System.out.println("Old Common block size (sum): " + oldCommonBlockSum);
+//		System.out.println("Old dCommon block size (avg) " + oldCommonBlockAvg);
+//		System.out.println("Old Common block size (min): " + oldCommonBlockMin);
+//		System.out.println("Old Common block size (max) " + oldCommonBlockMax);
 		
 	    double newCommonBlockAvg = 0.0;
 	    double newCommonBlockMax = -1000000.0;
@@ -1799,11 +1827,11 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		newCommonBlockAvg = newCommonBlockSum/newCommonChunkInfo.keySet().size();
-		System.out.println("New Common block size (sum): " + newCommonBlockSum);
-		System.out.println("New dCommon block size (avg) " + newCommonBlockAvg);
-		System.out.println("New Common block size (min): " + newCommonBlockMin);
-		System.out.println("New Common block size (max) " + newCommonBlockMax);
-		
+//		System.out.println("New Common block size (sum): " + newCommonBlockSum);
+//		System.out.println("New dCommon block size (avg) " + newCommonBlockAvg);
+//		System.out.println("New Common block size (min): " + newCommonBlockMin);
+//		System.out.println("New Common block size (max) " + newCommonBlockMax);
+//		
 		//calculating #B, avg, max of data blocks on dual slice
 	    double oldDATDualAvg = 0.0;
 	    double oldDATDualMax = -1000000.0;
@@ -1820,10 +1848,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		oldDATDualAvg = oldDATDualSum/oldDataBlockNodes.keySet().size();
-		System.out.println("Old data dual block size (sum): " + oldDATDualSum);
-		System.out.println("Old data dual block size (avg) " + oldDATDualAvg);
-		System.out.println("Old data dual block size (min): " + oldDATDualMin);
-		System.out.println("Old data dual block size (max) " + oldDATDualMax);
+//		System.out.println("Old data dual block size (sum): " + oldDATDualSum);
+//		System.out.println("Old data dual block size (avg) " + oldDATDualAvg);
+//		System.out.println("Old data dual block size (min): " + oldDATDualMin);
+//		System.out.println("Old data dual block size (max) " + oldDATDualMax);
 		
 		double newDATDualAvg = 0.0;
 	    double newDATDualMax = -100000.0;
@@ -1840,10 +1868,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		newDATDualAvg = newDATDualSum/newDataBlockNodes.keySet().size();
-		System.out.println("New data dual block size (sum): " + newDATDualSum);
-		System.out.println("New data dual block size (avg) " + newDATDualAvg);
-		System.out.println("New data dual block size (min): " + newDATDualMin);
-		System.out.println("New data dual block size (max) " + newDATDualMax);
+//		System.out.println("New data dual block size (sum): " + newDATDualSum);
+//		System.out.println("New data dual block size (avg) " + newDATDualAvg);
+//		System.out.println("New data dual block size (min): " + newDATDualMin);
+//		System.out.println("New data dual block size (max) " + newDATDualMax);
 		
 		//calculating #B, avg, max of data blocks on dual slice
 		double oldDATinPreSSAvg = 0.0;
@@ -1866,10 +1894,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		oldDATinPreSSAvg = oldDATinPreSSSum/oldDataBlockNodes.keySet().size();
-		System.out.println("Old data inPreSS block size (sum): " + oldDATinPreSSSum);
-		System.out.println("Old data inPreSS block size (avg) " + oldDATinPreSSAvg);
-		System.out.println("Old data inPreSS block size (min): " + oldDATinPreSSMin);
-		System.out.println("Old data inPreSS block size (max) " + oldDATinPreSSMax);
+//		System.out.println("Old data inPreSS block size (sum): " + oldDATinPreSSSum);
+//		System.out.println("Old data inPreSS block size (avg) " + oldDATinPreSSAvg);
+//		System.out.println("Old data inPreSS block size (min): " + oldDATinPreSSMin);
+//		System.out.println("Old data inPreSS block size (max) " + oldDATinPreSSMax);
 		
 		double newDATinPreSSAvg = 0.0;
 	    double newDATinPreSSMax = -100000.0;
@@ -1891,10 +1919,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		newDATinPreSSAvg = newDATinPreSSSum/newDataBlockNodes.keySet().size();
-		System.out.println("New data inPreSS block size (sum): " + newDATinPreSSSum);
-		System.out.println("New data inPreSS block size (avg) " + newDATinPreSSAvg);
-		System.out.println("New data inPreSS block size (min): " + newDATinPreSSMin);
-		System.out.println("New datat inPreSS block size (max) " + newDATinPreSSMax);
+//		System.out.println("New data inPreSS block size (sum): " + newDATinPreSSSum);
+//		System.out.println("New data inPreSS block size (avg) " + newDATinPreSSAvg);
+//		System.out.println("New data inPreSS block size (min): " + newDATinPreSSMin);
+//		System.out.println("New datat inPreSS block size (max) " + newDATinPreSSMax);
 		
 		///////////////////////////////
 		double oldCTLDualAvg = 0.0;
@@ -1912,10 +1940,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		oldCTLDualAvg = oldCTLDualSum/oldCtlBlockNodes.keySet().size();
-		System.out.println("Old ctl dual block size (sum): " + oldCTLDualSum);
-		System.out.println("Old ctl dual block size (avg) " + oldCTLDualAvg);
-		System.out.println("Old ctl dual block size (min): " + oldCTLDualMin);
-		System.out.println("Old ctl dual block size (max) " + oldCTLDualMax);
+//		System.out.println("Old ctl dual block size (sum): " + oldCTLDualSum);
+//		System.out.println("Old ctl dual block size (avg) " + oldCTLDualAvg);
+//		System.out.println("Old ctl dual block size (min): " + oldCTLDualMin);
+//		System.out.println("Old ctl dual block size (max) " + oldCTLDualMax);
 		
 		double newCTLDualAvg = 0.0;
 		double newCTLDualMax = -100000.0;
@@ -1932,10 +1960,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		newCTLDualAvg = newCTLDualSum/newCtlBlockNodes.keySet().size();
-		System.out.println("New ctl dual block size (sum): " + newCTLDualSum);
-		System.out.println("New ctl dual block size (avg) " + newCTLDualAvg);
-		System.out.println("New ctl dual block size (min): " + newCTLDualMin);
-		System.out.println("New ctl dual block size (max) " + newCTLDualMax);
+//		System.out.println("New ctl dual block size (sum): " + newCTLDualSum);
+//		System.out.println("New ctl dual block size (avg) " + newCTLDualAvg);
+//		System.out.println("New ctl dual block size (min): " + newCTLDualMin);
+//		System.out.println("New ctl dual block size (max) " + newCTLDualMax);
 		
 		//calculating #B, avg, max of data blocks on dual slice
 		double oldCTLinPreSSAvg = 0.0;
@@ -1958,10 +1986,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		oldCTLinPreSSAvg = oldCTLinPreSSSum/oldCtlBlockNodes.keySet().size();
-		System.out.println("Old ctl inPreSS block size (sum): " + oldCTLinPreSSSum);
-		System.out.println("Old ctl inPreSS block size (avg) " + oldCTLinPreSSAvg);
-		System.out.println("Old ctl inPreSS block size (min): " + oldCTLinPreSSMin);
-		System.out.println("Old ctl inPreSS block size (max) " + oldCTLinPreSSMax);
+//		System.out.println("Old ctl inPreSS block size (sum): " + oldCTLinPreSSSum);
+//		System.out.println("Old ctl inPreSS block size (avg) " + oldCTLinPreSSAvg);
+//		System.out.println("Old ctl inPreSS block size (min): " + oldCTLinPreSSMin);
+//		System.out.println("Old ctl inPreSS block size (max) " + oldCTLinPreSSMax);
 		
 		double newCTLinPreSSAvg = 0.0;
 	    double newCTLinPreSSMax = -100000.0;
@@ -1983,10 +2011,10 @@ public class dualSlicingWithConfigE {
 			}			
 		}
 		newCTLinPreSSAvg = newCTLinPreSSSum/newCtlBlockNodes.keySet().size();
-		System.out.println("New ctl inPreSS block size (sum): " + newCTLinPreSSSum);
-		System.out.println("New ctl inPreSS block size (avg) " + newCTLinPreSSAvg);
-		System.out.println("New ctl inPreSS block size (min): " + newCTLinPreSSMin);
-		System.out.println("New ctl inPreSS block size (max) " + newCTLinPreSSMax);
+//		System.out.println("New ctl inPreSS block size (sum): " + newCTLinPreSSSum);
+//		System.out.println("New ctl inPreSS block size (avg) " + newCTLinPreSSAvg);
+//		System.out.println("New ctl inPreSS block size (min): " + newCTLinPreSSMin);
+//		System.out.println("New ctl inPreSS block size (max) " + newCTLinPreSSMax);
 		
 	    if (FirstTime) {
 	    	
@@ -2110,7 +2138,7 @@ public class dualSlicingWithConfigE {
 		    if (FirstTime) {		    	
 		        String[] header = {"Bug ID", 
 		        		"Old Dual size(#DSlice)", "Old InPreSS size(#InPreSS)", "%Reduction", 
-		        		"New Dual size(#DSlice)", "Old InPreSS size(#InPreSS)", "%Reduction",
+		        		"New Dual size(#DSlice)", "New InPreSS size(#InPreSS)", "%Reduction",
 		        		"DSlice Time (Min)", "InPreSS Time (Min)"};
 		        WriteToExcel(results, header, "RQ1",true,true);
 		    }
@@ -2358,6 +2386,305 @@ public class dualSlicingWithConfigE {
 		    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(newDATDualAvg),String.valueOf(newDATDualMax) ,String.valueOf(reducNewData),
 		    		String.valueOf(newCtlBlockNodes.keySet().size()),String.valueOf(newCTLDualAvg),String.valueOf(newCTLDualMax), String.valueOf(reducNewCTL),};
 		       WriteToExcel(results,detailedDataRQ2,"RQ2",true,false);
+		    
+			
+			System.out.println("##############Finish##############");
+						
+	}	
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////
+	private void PrintD4JPaperResults(TestCase tc, String basePath, String projectName, String bugID, Trace newTrace, Trace oldTrace, 
+			List<TraceNode> new_visited, List<TraceNode> old_visited, List<TraceNode> new_kept, List<TraceNode> old_kept, 
+			List<TraceNode> new_retained, List<TraceNode> old_retained, HashMap<Integer, List<TraceNode>> newDataBlockNodes, 
+			HashMap<Integer, List<TraceNode>> oldDataBlockNodes, HashMap<Integer, List<TraceNode>> newCtlBlockNodes, 
+			HashMap<Integer, List<TraceNode>> oldCtlBlockNodes, int oldTraceTime, int newTraceTime, int codeTime, 
+			int traceTime, int dualTime, int InPreSSTime, HashMap<Integer, Integer> oldChangeChunkInfo, HashMap<Integer, Integer> newChangeChunkInfo, 
+			HashMap<Integer, Integer> oldTestCaseChunkInfo, HashMap<Integer, Integer> newTestCaseChunkInfo, 
+			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
+			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual) throws IOException {
+		  
+			Path path = Paths.get(basePath+"/results");
+			if(!Files.exists(path)) 
+				new File(basePath+"/results").mkdirs();
+			
+			String results = basePath+"/results/"+projectName+".xlsx";
+		    File tempFile = new File(results);
+		    boolean FirstTime = false;
+		    /////////////////#######////#######////#######////#######////#######////#######
+		    /////////////////#######////#######////#######////#######////#######////#######
+		    /////////////////#######////#######////#######////#######////#######////#######
+		    /////////////////#######////#######////#######////#######////#######////#######
+			double oldReduction = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(old_visited.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
+			double newReduction = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(new_visited.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
+		    double InPreSSoldReduction = (Double.valueOf(old_visited.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(old_visited.size()))*100.0;
+		    double InPreSSnewReduction = (Double.valueOf(new_visited.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(new_visited.size()))*100.0;
+			
+			if (!tempFile.exists()) {
+		        FirstTime=true;
+		        XSSFWorkbook workbook = new XSSFWorkbook();
+		        XSSFSheet sheet = workbook.createSheet("stats");
+		        try {
+		        	FileOutputStream outputStream = new FileOutputStream(results);
+		            workbook.write(outputStream);
+		            workbook.close();
+		        	outputStream.close();
+		        } catch (Exception e) {
+		        }
+		    }		
+	
+            if (FirstTime) {		    	
+		        String[] header = {"Bug ID", 
+		        		"Old trace size (#T)","Old Dual size(#DSlice)", "%Reduction", "#Chg", "Old InPreSS size(#InPreSS)", "%Old InPreSS Reduction",
+		        		"New trace size (#T)","New Dual size(#DSlice)", "%Reduction", "#Chg", "New InPreSS size(#InPreSS)", "%New InPreSS Reduction",  
+		        		"DSlice Time (Min)", "InPreSS Time (Min)"
+		        		};
+		        WriteToExcel(results, header, "stats",false, true);
+		    }
+		    String[] data = {bugID, 
+		    		String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(old_visited.size()), String.valueOf(oldReduction), String.valueOf(oldChangeChunkInfo.keySet().size()), String.valueOf(old_kept.size()), String.valueOf(InPreSSoldReduction), 
+		    		String.valueOf(newTrace.getExecutionList().size()), String.valueOf(new_visited.size()), String.valueOf(newReduction), String.valueOf(newChangeChunkInfo.keySet().size()), String.valueOf(new_kept.size()), String.valueOf(InPreSSnewReduction), 
+		    		String.valueOf((Double.valueOf(dualTime)/1000.0)/60.0), String.valueOf((Double.valueOf(InPreSSTime)/1000.0)/60.0)
+		    		};
+		    WriteToExcel(results,data,"stats",false, false);
+						
+	
+		    /////////////////#######////#######////#######////#######////#######////#######
+		    /////////////////#######////#######////#######////#######////#######////#######
+
+		    
+		    if (FirstTime) {		    	
+		        String[] header = {"Bug ID", 
+		        		"# Old mathched block", "Avg.", "Max", "%Reduction", 
+		        		"# Old unmathched block", "Avg.", "Max", "%Reduction", 
+		        		"# New mathched block", "Avg.", "Max", "%Reduction", 
+		        		"# New unmathched block", "Avg.", "Max", "%Reduction", 
+		        		};
+		        WriteToExcel(results, header, "detailed",true,true);
+		    }
+		       
+		 		       
+		    double sum = 0.0;
+		    for(Integer loc:oldChangeChunkInfo.keySet()) {
+		    	sum += oldChangeChunkInfo.get(loc);
+		    }
+		    double avg = sum/(double)oldChangeChunkInfo.keySet().size();
+		    double oldLocation = avg/(double)oldTrace.getExecutionList().size();
+		    int oldChangedStamts = getChanges(old_retained, tc);
+		    
+		    sum = 0.0;
+		    for(Integer loc:newChangeChunkInfo.keySet()) {
+		    	sum += newChangeChunkInfo.get(loc);
+		    }
+		    avg = sum/(double)newChangeChunkInfo.keySet().size();
+		    double newLocation = avg/(double)newTrace.getExecutionList().size();
+		    int newChangedStamts = getChanges(new_retained, tc);
+		    
+		    double oldCommonBlockAvg = 0.0;
+		    double oldCommonBlockMax = -1000000.0;
+		    double oldCommonBlockMin = 100000.0;
+		    double oldCommonBlockSum = 0.0;
+			for (Integer blockID :oldCommonChunkInfo.keySet()) {
+				Integer noOfStmts = oldCommonChunkInfo.get(blockID);
+				if(noOfStmts!=null) {
+					oldCommonBlockSum = oldCommonBlockSum + noOfStmts;
+					if (oldCommonBlockMax<noOfStmts)
+						oldCommonBlockMax = noOfStmts;
+					if (oldCommonBlockMin>noOfStmts)
+						oldCommonBlockMin = noOfStmts;
+				}			
+			}
+			oldCommonBlockAvg = oldCommonBlockSum/oldCommonChunkInfo.keySet().size();
+
+			
+		    double newCommonBlockAvg = 0.0;
+		    double newCommonBlockMax = -1000000.0;
+		    double newCommonBlockMin = 100000.0;
+		    double newCommonBlockSum = 0.0;
+			for (Integer blockID :newCommonChunkInfo.keySet()) {
+				Integer noOfStmts = newCommonChunkInfo.get(blockID);
+				if(noOfStmts!=null) {
+					newCommonBlockSum = newCommonBlockSum + noOfStmts;
+					if (newCommonBlockMax<noOfStmts)
+						newCommonBlockMax = noOfStmts;
+					if (newCommonBlockMin>noOfStmts)
+						newCommonBlockMin = noOfStmts;
+				}			
+			}
+			newCommonBlockAvg = newCommonBlockSum/newCommonChunkInfo.keySet().size();
+
+			
+		    	
+			//calculating #B, avg, max of data blocks on dual slice
+		    double oldDATDualAvg = 0.0;
+		    double oldDATDualMax = -1000000.0;
+		    double oldDATDualMin = 100000.0;
+		    double oldDATDualSum = 0.0;
+			for (Integer block :oldDataBlockNodes.keySet()) {
+				List<TraceNode> nodes = oldDataBlockNodes.get(block);
+				if(nodes!=null) {
+					oldDATDualSum = oldDATDualSum + nodes.size();
+					if (oldDATDualMax<nodes.size())
+						oldDATDualMax = nodes.size();
+					if (oldDATDualMin>nodes.size())
+						oldDATDualMin = nodes.size();
+				}			
+			}
+			oldDATDualAvg = oldDATDualSum/oldDataBlockNodes.keySet().size();
+
+			
+			double newDATDualAvg = 0.0;
+		    double newDATDualMax = -100000.0;
+		    double newDATDualMin = 100000.0;
+		    double newDATDualSum = 0.0;
+			for (Integer block :newDataBlockNodes.keySet()) {
+				List<TraceNode> nodes = newDataBlockNodes.get(block);
+				if(nodes!=null) {
+					newDATDualSum = newDATDualSum + nodes.size();
+					if (newDATDualMax<nodes.size())
+						newDATDualMax = nodes.size();
+					if (newDATDualMin>nodes.size())
+						newDATDualMin = nodes.size();
+				}			
+			}
+			newDATDualAvg = newDATDualSum/newDataBlockNodes.keySet().size();
+
+			
+			//calculating #B, avg, max of data blocks on dual slice
+			double oldDATInPreSSAvg = 0.0;
+			double oldDATInPreSSMax = -100000.0;
+			double oldDATInPreSSMin = 100000.0;
+			double oldDATInPreSSSum = 0.0;
+			for (Integer block :oldDataBlockNodes.keySet()) {
+				int size = 0;
+				List<TraceNode> nodes = oldDataBlockNodes.get(block);
+				if(nodes!=null) {
+					for (TraceNode node: nodes) {
+						if (old_kept.contains(node))
+							size = size + 1;
+					}
+					oldDATInPreSSSum = oldDATInPreSSSum + size;
+					if (oldDATInPreSSMax<size)
+						oldDATInPreSSMax = size;
+					if (oldDATInPreSSMin>size)
+						oldDATInPreSSMin = size;
+				}			
+			}
+			oldDATInPreSSAvg = oldDATInPreSSSum/oldDataBlockNodes.keySet().size();
+
+			
+			double newDATInPreSSAvg = 0.0;
+		    double newDATInPreSSMax = -100000.0;
+		    double newDATInPreSSMin = 100000.0;
+		    double newDATInPreSSSum = 0.0;
+			for (Integer block :newDataBlockNodes.keySet()) {
+				int size = 0;
+				List<TraceNode> nodes = newDataBlockNodes.get(block);
+				if(nodes!=null) {
+					for (TraceNode node: nodes) {
+						if (new_kept.contains(node))
+							size = size + 1;
+					}
+					newDATInPreSSSum = newDATInPreSSSum + size;
+					if (newDATInPreSSMax<size)
+						newDATInPreSSMax = size;
+					if (newDATInPreSSMin>size)
+						newDATInPreSSMin = size;
+				}			
+			}
+			newDATInPreSSAvg = newDATInPreSSSum/newDataBlockNodes.keySet().size();
+
+			
+			///////////////////////////////
+			double oldCTLDualAvg = 0.0;
+			double oldCTLDualMax = -1000000.0;
+			double oldCTLDualMin = 100000.0;
+			double oldCTLDualSum = 0.0;
+			for (Integer block :oldCtlBlockNodes.keySet()) {
+				List<TraceNode> nodes = oldCtlBlockNodes.get(block);
+				if(nodes!=null) {
+					oldCTLDualSum = oldCTLDualSum + nodes.size();
+					if (oldCTLDualMax<nodes.size())
+						oldCTLDualMax = nodes.size();
+					if (oldCTLDualMin>nodes.size())
+						oldCTLDualMin = nodes.size();
+				}			
+			}
+			oldCTLDualAvg = oldCTLDualSum/oldCtlBlockNodes.keySet().size();
+
+			
+			double newCTLDualAvg = 0.0;
+			double newCTLDualMax = -100000.0;
+			double newCTLDualMin = 100000.0;
+			double newCTLDualSum = 0.0;
+			for (Integer block :newCtlBlockNodes.keySet()) {
+				List<TraceNode> nodes = newCtlBlockNodes.get(block);
+				if(nodes!=null) {
+					newCTLDualSum = newCTLDualSum + nodes.size();
+					if (newCTLDualMax<nodes.size())
+						newCTLDualMax = nodes.size();
+					if (newCTLDualMin>nodes.size())
+						newCTLDualMin = nodes.size();
+				}			
+			}
+			newCTLDualAvg = newCTLDualSum/newCtlBlockNodes.keySet().size();
+
+			
+			//calculating #B, avg, max of data blocks on dual slice
+			double oldCTLInPreSSAvg = 0.0;
+			double oldCTLInPreSSMax = -100000.0;
+			double oldCTLInPreSSMin = 100000.0;
+			double oldCTLInPreSSSum = 0.0;
+			for (Integer block :oldCtlBlockNodes.keySet()) {
+				int size = 0;
+				List<TraceNode> nodes = oldCtlBlockNodes.get(block);
+				if(nodes!=null) {
+					for (TraceNode node: nodes) {
+						if (old_kept.contains(node))
+							size = size + 1;
+					}
+					oldCTLInPreSSSum = oldCTLInPreSSSum + size;
+					if (oldCTLInPreSSMax<size)
+						oldCTLInPreSSMax = size;
+					if (oldCTLInPreSSMin>size)
+						oldCTLInPreSSMin = size;
+				}			
+			}
+			oldCTLInPreSSAvg = oldCTLInPreSSSum/oldCtlBlockNodes.keySet().size();
+
+			
+			double newCTLInPreSSAvg = 0.0;
+		    double newCTLInPreSSMax = -100000.0;
+		    double newCTLInPreSSMin = 100000.0;
+		    double newCTLInPreSSSum = 0.0;
+			for (Integer block :newCtlBlockNodes.keySet()) {
+				int size = 0;
+				List<TraceNode> nodes = newCtlBlockNodes.get(block);
+				if(nodes!=null) {
+					for (TraceNode node: nodes) {
+						if (new_kept.contains(node))
+							size = size + 1;
+					}
+					newCTLInPreSSSum = newCTLInPreSSSum + size;
+					if (newCTLInPreSSMax<size)
+						newCTLInPreSSMax = size;
+					if (newCTLInPreSSMin>size)
+						newCTLInPreSSMin = size;
+				}			
+			}
+			newCTLInPreSSAvg = newCTLInPreSSSum/newCtlBlockNodes.keySet().size();		
+		    
+		    double reducOldData =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldCTLDualSum+oldDATInPreSSSum))/(Double.valueOf(old_visited.size()))*100.0;
+		    double reducOldCTL =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldDATDualSum+oldCTLInPreSSSum))/(Double.valueOf(old_visited.size()))*100.0;
+		    double reducNewData =  (Double.valueOf(new_visited.size())-(new_retained.size()+newCTLDualSum+newDATInPreSSSum))/(Double.valueOf(new_visited.size()))*100.0;
+		    double reducNewCTL =  (Double.valueOf(new_visited.size())-(new_retained.size()+newDATDualSum+newCTLInPreSSSum))/(Double.valueOf(new_visited.size()))*100.0;
+		    
+		    String[] detailedDataRQ2 = {bugID, 
+		    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(oldDATDualAvg),String.valueOf(oldDATDualMax),String.valueOf(reducOldData),
+		    		String.valueOf(oldCtlBlockNodes.keySet().size()), String.valueOf(oldCTLDualAvg),String.valueOf(oldCTLDualMax) ,String.valueOf(reducOldCTL),
+		    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(newDATDualAvg),String.valueOf(newDATDualMax) ,String.valueOf(reducNewData),
+		    		String.valueOf(newCtlBlockNodes.keySet().size()),String.valueOf(newCTLDualAvg),String.valueOf(newCTLDualMax), String.valueOf(reducNewCTL),};
+		       WriteToExcel(results,detailedDataRQ2,"detailed",true,false);
 		    
 			
 			System.out.println("##############Finish##############");

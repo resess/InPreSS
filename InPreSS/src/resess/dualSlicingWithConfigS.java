@@ -331,7 +331,7 @@ public class dualSlicingWithConfigS {
 		//addingClientTestNodes(tc, oldTrace.getExecutionList(), newTrace.getExecutionList(), old_kept, new_kept, old_retained, new_retained, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping);		
 		
 		//keep statements in the test that are kept in dual slice:
-		addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping);
+//		addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping);
 		int oldRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, oldTrace.getExecutionList(),old_visited,oldSlicer4J,oldSlicer4JBytecodeMapping);
 		int newRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, newTrace.getExecutionList(),new_visited,newSlicer4J,newSlicer4JBytecodeMapping);
 		
@@ -1125,8 +1125,9 @@ public class dualSlicingWithConfigS {
 		boolean isCTLBlock = false;
 		for (int i = old_visited.size() - 1; i >= 0; i--) {
 			TraceNode step = old_visited.get(i);
+			//System.out.println("step on old is: " + step);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || isATestStatement(tc, step) ) { // separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { // separate the blocks
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {// coming from a data block
@@ -1175,7 +1176,7 @@ public class dualSlicingWithConfigS {
 		for (int i = new_visited.size() - 1; i >= 0; i--) {
 			TraceNode step = new_visited.get(i);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || isATestStatement(tc, step) ) { // separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || (isATestStatement(tc, step) && isLastStatement(tc, step,new_visited))) { // separate the blocks
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {// coming from a data block
@@ -1268,7 +1269,7 @@ public class dualSlicingWithConfigS {
 		for (int i = old_visited.size() - 1; i >= 0; i--) {
 			TraceNode step = old_visited.get(i);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || isATestStatement(tc, step)) { // separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { // separate the blocks
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {// coming from a data block
@@ -1381,7 +1382,8 @@ public class dualSlicingWithConfigS {
 				TraceNode step = old_visited.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
 				String Type;
-				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
+//				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
+				if (changeType.getType() == StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {
 					old_data_node_function.put(step, index);
 					TraceNode matchedStep = changeType.getMatchingStep();
 					new_data_node_function.put(matchedStep, index);
@@ -1390,7 +1392,9 @@ public class dualSlicingWithConfigS {
 						if (!new_dat_kept.contains(matchedStep))
 							new_dat_kept.add(matchedStep);
 					}
-				} else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
+				}
+				//else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
+				else if (changeType.getType() == StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {
 					old_ctl_node_function.put(step, index);
 					index = index + 1;
 				} else {
@@ -1421,7 +1425,8 @@ public class dualSlicingWithConfigS {
 				TraceNode step = new_visited.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
 				String Type;
-				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
+//				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
+				if (changeType.getType() == StepChangeType.DAT && !isLastStatement(tc, step, new_visited)) {
 					if (!new_data_node_function.keySet().contains(step)) {
 						new_data_node_function.put(step, index);
 						TraceNode matchedStep = changeType.getMatchingStep();
@@ -1433,7 +1438,9 @@ public class dualSlicingWithConfigS {
 						if (!old_dat_kept.contains(matchedStep))
 							old_dat_kept.add(matchedStep);
 					}
-				} else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
+				}
+//				 else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
+				else if (changeType.getType() == StepChangeType.CTL && !isLastStatement(tc, step, new_visited)) {
 					new_ctl_node_function.put(step, index);
 					index = index + 1;
 				} else {
@@ -1476,6 +1483,16 @@ public class dualSlicingWithConfigS {
 					}
 				}
 			}
+			if (old_kept.size()==0) {				
+			    old_kept.add(old_visited.get(old_visited.size()-1));
+//			    if(!old_retained.contains(old_visited.get(old_visited.size()-1)))
+//			    	old_retained.add(old_visited.get(old_visited.size()-1));
+			}
+			if (new_kept.size()==0) {		
+			    new_kept.add(new_visited.get(new_visited.size()-1));
+//			    if(!new_retained.contains(new_visited.get(new_visited.size()-1)))
+//			    	new_retained.add(new_visited.get(new_visited.size()-1));
+			}
 //			Collections.sort(old_visited, new TraceNodePairOrderComparator(oldSlicer4J, oldSlicer4JBytecodeMapping));
 //			Collections.sort(new_visited, new TraceNodePairOrderComparator(newSlicer4J, newSlicer4JBytecodeMapping));
 			Collections.sort(old_kept, new TraceNodePairOrderComparator(oldSlicer4J, oldSlicer4JBytecodeMapping));
@@ -1493,10 +1510,10 @@ public class dualSlicingWithConfigS {
 			for (int i = old_kept.size() - 1; i >= 0; i--) {
 				TraceNode step = old_kept.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-				String Type;
+//				String Type;
 				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
 					
-						Type = "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
+//						Type = "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();
 						List<ValueBox> writtenSoot = new ArrayList<>();
 						List<Integer> positions = getSlicer4JMappedNode(step, oldSlicer4J, oldSlicer4JBytecodeMapping);
@@ -1581,14 +1598,14 @@ public class dualSlicingWithConfigS {
 							abstraction = abstraction + ");";
 							// abstraction = getSourceCode(step, false, matcher, oldSlicer4J,oldSlicer4JBytecodeMapping);
 						}
-						String fixNode = step.toString();
+//						String fixNode = step.toString();
 //						writer.println("\"OldNode: " + fixNode + "\"" + "[" + Type + " label=\"" + abstraction + "\"];");
 						fileWriter.println(abstraction);
 
 					
 				} else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
 					//if (old_kept.contains(step)) {// should be added but abstracted
-						Type = "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
+//						Type = "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();
 						List<ValueBox> writtenSoot = new ArrayList<>();
 						List<Integer> positions = getSlicer4JMappedNode(step, oldSlicer4J, oldSlicer4JBytecodeMapping);
@@ -1673,7 +1690,7 @@ public class dualSlicingWithConfigS {
 							abstraction = abstraction + ");";
 							// abstraction = getSourceCode(step, false, matcher, oldSlicer4J, oldSlicer4JBytecodeMapping);
 						}
-						String fixNode = step.toString();
+//						String fixNode = step.toString();
 //						writer.println("\"OldNode: " + fixNode + "\"" + "[" + Type + " label=\"" + abstraction + "\"];");
 						fileWriter.println(abstraction);
 
@@ -1684,8 +1701,8 @@ public class dualSlicingWithConfigS {
 //					else if (changeType.getType() == StepChangeType.SRCCTL)
 //						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
 //					else // (changeType.getType()==StepChangeType.IDT)
-					Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
-					String fixNode = step.toString();
+//					Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
+//					String fixNode = step.toString();
 //					writer.println("\"OldNode: " + fixNode + "\"" + "[" + Type + " label=\""+ getSourceCode(step, false, matcher, oldSlicer4J, oldSlicer4JBytecodeMapping) + "\"];");
 					fileWriter.println(getSourceCode(step, false, matcher, oldSlicer4J, oldSlicer4JBytecodeMapping));
 				}
@@ -1701,10 +1718,10 @@ public class dualSlicingWithConfigS {
 			for (int i = new_kept.size() - 1; i >= 0; i--) {
 				TraceNode step = new_kept.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-				String Type;
+//				String Type;
 				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
 					//if (new_kept.contains(step) || new_dat_kept.contains(step)) {// should be added but abstracted
-						Type = "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
+//						Type = "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();
 						List<ValueBox> writtenSoot = new ArrayList<>();
 						List<Integer> positions = getSlicer4JMappedNode(step, oldSlicer4J, oldSlicer4JBytecodeMapping);
@@ -1789,13 +1806,13 @@ public class dualSlicingWithConfigS {
 							abstraction = abstraction + ");";
 							// abstraction = getSourceCode(step, true, matcher, newSlicer4J,newSlicer4JBytecodeMapping);
 						}
-						String fixNode = step.toString();
+//						String fixNode = step.toString();
 //						writer.println("\"NewNode: " + fixNode + "\"" + "[" + Type + " label=\"" + abstraction + "\"];");
 						fileWriter.println(abstraction);
 					
 				} else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
 					if (new_kept.contains(step)) {// should be added but abstracted
-						Type = "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
+//						Type = "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
 						List<VarValue> written = step.getWrittenVariables();
 						List<ValueBox> writtenSoot = new ArrayList<>();
 						List<Integer> positions = getSlicer4JMappedNode(step, oldSlicer4J, oldSlicer4JBytecodeMapping);
@@ -1880,7 +1897,7 @@ public class dualSlicingWithConfigS {
 							abstraction = abstraction + ");";
 							// abstraction = getSourceCode(step, true, matcher, newSlicer4J, newSlicer4JBytecodeMapping);
 						}
-						String fixNode = step.toString();
+//						String fixNode = step.toString();
 //						writer.println("\"NewNode: " + fixNode + "\"" + "[" + Type + " label=\"" + abstraction + "\"];");
 						fileWriter.println(abstraction);
 					}
@@ -1890,8 +1907,8 @@ public class dualSlicingWithConfigS {
 //					else if (changeType.getType() == StepChangeType.SRCCTL)
 //						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
 //					else // (changeType.getType()==StepChangeType.IDT)
-					Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
-					String fixNode = step.toString();
+//					Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
+//					String fixNode = step.toString();
 //					writer.println("\"NewNode: " + fixNode + "\"" + "[" + Type + " label=\""+ getSourceCode(step, true, matcher, newSlicer4J, newSlicer4JBytecodeMapping) + "\"];");
 					fileWriter.println(getSourceCode(step, true, matcher, newSlicer4J, newSlicer4JBytecodeMapping));
 				}
@@ -1905,35 +1922,35 @@ public class dualSlicingWithConfigS {
 //			Collections.sort(old_kept, new TraceNodePairOrderComparator(oldSlicer4J, oldSlicer4JBytecodeMapping));
 //			Collections.sort(new_kept, new TraceNodePairOrderComparator(newSlicer4J, newSlicer4JBytecodeMapping));
 
-			for (int i = 0; i < old_kept.size(); i++) {
-				if (i != old_kept.size() - 1) {
-					TraceNode step = old_kept.get(i);
-					TraceNode BeforeStep = old_kept.get(i + 1);					
-//					writer.println("\"OldNode: " + BeforeStep + "\" " + "->" + "\"OldNode: " + step
-//							+ "\" [color=gray55 style=dotted arrowhead=normal dir=back];");
-				}
-			}
-			for (int i = 0; i < new_kept.size(); i++) {
-				if (i != new_kept.size() - 1) {
-					TraceNode step = new_kept.get(i);
-					TraceNode BeforeStep = new_kept.get(i + 1);
-//					writer.println("\"NewNode: " + BeforeStep + "\" " + "->" + "\"NewNode: " + step
-//							+ "\" [color=gray55 style=dotted arrowhead=normal dir=back] ;");
-				}
-			}
+//			for (int i = 0; i < old_kept.size(); i++) {
+//				if (i != old_kept.size() - 1) {
+//					TraceNode step = old_kept.get(i);
+//					TraceNode BeforeStep = old_kept.get(i + 1);					
+////					writer.println("\"OldNode: " + BeforeStep + "\" " + "->" + "\"OldNode: " + step
+////							+ "\" [color=gray55 style=dotted arrowhead=normal dir=back];");
+//				}
+//			}
+//			for (int i = 0; i < new_kept.size(); i++) {
+//				if (i != new_kept.size() - 1) {
+//					TraceNode step = new_kept.get(i);
+//					TraceNode BeforeStep = new_kept.get(i + 1);
+////					writer.println("\"NewNode: " + BeforeStep + "\" " + "->" + "\"NewNode: " + step
+////							+ "\" [color=gray55 style=dotted arrowhead=normal dir=back] ;");
+//				}
+//			}
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////// add alignment
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// edges//////////////////////////////////////////////////////////////////////////////
-			for (int i = 0; i < old_kept.size(); i++) {
-				TraceNode step = old_kept.get(i);
-				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-				TraceNode matchedStep = changeType.getMatchingStep();
-//				if (new_kept.contains(matchedStep)) {
-////					writer.println("\"OldNode: " + step + "\" " + "->" + "\"NewNode: " + matchedStep
-////							+ "\" [color=grey55 style=dotted arrowhead=none constraint=false];");
-//				}
-			}
+//			for (int i = 0; i < old_kept.size(); i++) {
+//				TraceNode step = old_kept.get(i);
+//				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
+//				TraceNode matchedStep = changeType.getMatchingStep();
+////				if (new_kept.contains(matchedStep)) {
+//////					writer.println("\"OldNode: " + step + "\" " + "->" + "\"NewNode: " + matchedStep
+//////							+ "\" [color=grey55 style=dotted arrowhead=none constraint=false];");
+////				}
+//			}
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			///////////////////////// add dependency edges////////////////
@@ -2000,7 +2017,15 @@ public class dualSlicingWithConfigS {
 		}
 		return false;
 	}
-
+	private boolean isLastStatement(TestCase tc, TraceNode step, List<TraceNode> trace) {
+		String ClassName = step.getClassCanonicalName();
+		if (tc.testClass.equals(ClassName)) {
+			if(trace.get(trace.size()-1).toString().contentEquals(step.toString())) {
+				return true;
+			}
+		}
+		return false;
+	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
