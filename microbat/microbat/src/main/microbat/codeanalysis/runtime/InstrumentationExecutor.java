@@ -129,30 +129,32 @@ public class InstrumentationExecutor {
 	
 	public RunningInfo run() throws StepLimitException {
 		try {
-//			System.out.println("first precheck..");
-//			agentRunner.precheck(null);
-//			PrecheckInfo firstPrecheckInfo = agentRunner.getPrecheckInfo();
-//			System.out.println(firstPrecheckInfo);
-//			System.out.println("second precheck..");
-			
 			agentRunner.getConfig().setDebug(Settings.isRunWtihDebugMode);
 			agentRunner.getConfig().setPort(9000);
 			
-			System.out.println("precheck..");
+			System.out.println("first precheck..");
+			agentRunner.precheck(null);			
+			PrecheckInfo firstPrecheckInfo = agentRunner.getPrecheckInfo();
+			System.out.println(firstPrecheckInfo);
+			
+			System.out.println("second precheck..");					
 			agentRunner.precheck(null);
-			PrecheckInfo info = agentRunner.getPrecheckInfo();
-			System.out.println(info);
-			PreCheckInformation precheckInfomation = new PreCheckInformation(info.getThreadNum(), info.getStepTotal(),
-					info.isOverLong(), new ArrayList<>(info.getVisitedLocs()), info.getExceedingLimitMethods(), info.getLoadedClasses());
+			PrecheckInfo secondPrecheckInfo = agentRunner.getPrecheckInfo();
+			System.out.println(secondPrecheckInfo);
+			
+			PreCheckInformation precheckInfomation = new PreCheckInformation(secondPrecheckInfo.getThreadNum(), secondPrecheckInfo.getStepTotal(),
+					secondPrecheckInfo.isOverLong(), new ArrayList<>(secondPrecheckInfo.getVisitedLocs()), secondPrecheckInfo.getExceedingLimitMethods(), secondPrecheckInfo.getLoadedClasses());
 			precheckInfomation.setPassTest(agentRunner.isTestSuccessful());
-//			precheckInfomation.setUndeterministic(firstPrecheckInfo.getStepTotal() != precheckInfomation.getStepTotal());
+			precheckInfomation.setUndeterministic(firstPrecheckInfo.getStepTotal() != secondPrecheckInfo.getStepTotal());
 			this.setPrecheckInfo(precheckInfomation);
+			
 			System.out.println("the trace length is: " + precheckInfomation.getStepNum());
+			
 			if (precheckInfomation.isUndeterministic()) {
 				System.out.println("undeterministic!!");
 				throw new StepLimitException(-100);
 			} 
-			if (info.isOverLong() /*&& !precheckInfomation.isUndeterministic() */) {
+			if (secondPrecheckInfo.isOverLong() /*&& !precheckInfomation.isUndeterministic() */) {
 				System.out.println("over long!!");
 				throw new StepLimitException(precheckInfomation.getStepNum());
 			}
@@ -160,12 +162,12 @@ public class InstrumentationExecutor {
 				System.out.println("over long!!");
 				throw new StepLimitException(precheckInfomation.getStepNum());
 			}
-			if ((info.getThreadNum()>1)) {
+			if ((secondPrecheckInfo.getThreadNum()>1)) {
 				System.out.println("multi-thread");
 				throw new StepLimitException(-200);
 			}
-			if (!info.getExceedingLimitMethods().isEmpty()) {
-				agentRunner.addAgentParams(AgentParams.OPT_OVER_LONG_METHODS, info.getExceedingLimitMethods());
+			if (!secondPrecheckInfo.getExceedingLimitMethods().isEmpty()) {
+				agentRunner.addAgentParams(AgentParams.OPT_OVER_LONG_METHODS, secondPrecheckInfo.getExceedingLimitMethods());
 			}
 			
 //			agentRunner.getConfig().setDebug(Settings.isRunWtihDebugMode);
@@ -179,6 +181,7 @@ public class InstrumentationExecutor {
 		
 		return null;
 	}
+
 	
 	public PreCheckInformation runPrecheck(String dumpFile, int stepLimit) {
 		try {
