@@ -300,14 +300,16 @@ public class dualSlicingWithConfigE {
 		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> old_CashDeps = new HashMap<>();
 		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> new_CashDeps = new HashMap<>();
 		
+		StepChangeTypeChecker typeChecker = new StepChangeTypeChecker(newTrace, oldTrace);
+		
+		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> slice_CashDeps = new HashMap<>();
+		getSliceStats(basePath, projectName,  bugID,dualPairList,slice_CashDeps, observedFaultNode, newTrace,typeChecker,matcher,proPath);
 		
 		new_visited.add(observedFaultNode);
 		new_workList.add(observedFaultNode);
 		System.out.println("#############################");
 		System.out.println("Starting Working list");
 		
-
-		StepChangeTypeChecker typeChecker = new StepChangeTypeChecker(newTrace, oldTrace);
 
 		Long dual_start_time = System.currentTimeMillis();
 		while(!new_workList.isEmpty() || !old_workList.isEmpty()){
@@ -409,6 +411,87 @@ public class dualSlicingWithConfigE {
 				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
 			
 		}
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	private void getSliceStats(String basePath, String projectName, String bugID, PairList dualPairList, HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> slice_CashDeps, TraceNode observedFaultNode, Trace newTrace, StepChangeTypeChecker typeChecker, DiffMatcher matcher, String proPath) {
+		List<TraceNode> workList = new ArrayList<>();
+		List<TraceNode> slice = new ArrayList<>();
+		workList.add(observedFaultNode);
+		slice.add(observedFaultNode);
+		while(!workList.isEmpty()) {
+			TraceNode step = workList.remove(0);
+		    updateWorklistSlice(slice,workList,dualPairList,slice_CashDeps, step, newTrace,typeChecker,matcher);				
+		}
+	    
+		 List<String> StmtsTraceList = new ArrayList<String>();
+		 List<String> StmtsSliceList = new ArrayList<String>();
+		 List<String> methodsTraceList = new ArrayList<String>();
+		 List<String> methodsSliceList = new ArrayList<String>();
+		 for(int i=0; i<newTrace.size(); i++) {				
+			String temp = newTrace.getExecutionList().get(i).getClassCanonicalName();
+			String methodName = newTrace.getExecutionList().get(i).getMethodName();
+			if(methodName != null){
+				temp = temp + ":" + methodName;
+			}
+			if(!methodsTraceList.contains(temp))//add unique methods
+				methodsTraceList.add(temp);
+			temp = temp + ":" + newTrace.getExecutionList().get(i).getLineNumber();
+			if(!StmtsTraceList.contains(temp))//add unique statements
+				StmtsTraceList.add(temp);	        
+		 }
+		 for(int i=0; i<slice.size(); i++) {				
+				String temp = slice.get(i).getClassCanonicalName();
+				String methodName = slice.get(i).getMethodName();
+				if(methodName != null){
+					temp = temp + ":" + methodName;
+				}
+				if(!methodsSliceList.contains(temp))
+					methodsSliceList.add(temp);
+				temp = temp + ":" + slice.get(i).getLineNumber();
+				if(!StmtsSliceList.contains(temp))
+					StmtsSliceList.add(temp);	        
+		 }
+			String results = basePath+"/results/SliceStats.xlsx";
+			File tempFile = new File(results);
+			boolean FirstTime = false;
+			if (!tempFile.exists()) {
+			   FirstTime=true;
+			   XSSFWorkbook workbook = new XSSFWorkbook();
+			   XSSFSheet sheet = workbook.createSheet("stats");
+			   try {
+			       FileOutputStream outputStream = new FileOutputStream(results);
+			       workbook.write(outputStream);
+			       workbook.close();
+			       outputStream.close();
+			   } catch (Exception e) {
+			   }
+			 }		
+			 if (FirstTime) {		    	
+			     String[] header = {"project Name", "Bug ID", "# Stmt instances in Trace", "# Unique Stmts in Trace", "# Unique Stmts in Slice", "Stmts Reduction", "# Unique Methods in Trace", "# Unique Methods in Slice","Methods Reduction"};
+			     WriteToExcel(results, header, "stats",false, true);
+			 }
+			 double stmtReduc = ((Double.valueOf(StmtsTraceList.size())-Double.valueOf(StmtsSliceList.size()))/Double.valueOf(StmtsTraceList.size())) * 100.0;
+			 double methodsReduc = ((Double.valueOf(methodsTraceList.size())-Double.valueOf(methodsSliceList.size()))/Double.valueOf(methodsTraceList.size())) * 100.0;
+			 String[] data = {projectName, bugID, String.valueOf(newTrace.size()), String.valueOf(StmtsTraceList.size()),String.valueOf(StmtsSliceList.size()),String.valueOf(stmtReduc),String.valueOf(methodsTraceList.size()),String.valueOf(methodsSliceList.size()),String.valueOf(methodsReduc)};
+			 WriteToExcel(results,data,"stats",false, false);				
+	 }
+	    	
+	private void updateWorklistSlice(List<TraceNode> slice, List<TraceNode> workList, PairList dualPairList, HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> slice_CashDeps, TraceNode step, Trace newTrace,StepChangeTypeChecker typeChecker, DiffMatcher matcher) {
+		StepChangeType changeType = typeChecker.getType(step, true, dualPairList, matcher);
+		HashMap<Pair<TraceNode, String>, String> deps = new HashMap<>();//map the <dep node, the var> and data/control	
+		deps = getDirectDependencies(slice_CashDeps, changeType, step, newTrace, true, typeChecker, dualPairList, matcher);
+		
+		////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
+		for(Pair<TraceNode, String> d: deps.keySet()){
+			if(!slice.contains(d.first())) {
+				workList.add(d.first());
+				slice.add(d.first());
+			}
+		}
+		
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////

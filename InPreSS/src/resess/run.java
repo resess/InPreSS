@@ -1,13 +1,14 @@
 package resess;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class run {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws NumberFormatException, IOException, InterruptedException {
 		 boolean debug = false;
 
 		generateResults generatoror = new generateResults();
@@ -26,12 +27,14 @@ public class run {
 		//String testcase = "com.google.javascript.jscomp.IntegrationTest::testIssue787"; //clousr(1)
 		String testcase = args[3];
 		
+		String EreasOrSlicer = args[4];
+		
 		String proPath = basePath + projectName + "/" + bugID;
 		String buggyPath = proPath + "/bug";
 		String fixPath = proPath + "/fix";
 
-		System.out.println("working on the " + bugID + "th bug of " + projectName + " project.");
-		projConfig config = projConfig.getD4JConfig(projectName, Integer.valueOf(bugID));	
+		System.out.println("working on the " + bugID + "the bug of " + projectName + " project.");
+		projConfig config = projConfig.getConfig(basePath, projectName, Integer.valueOf(bugID),EreasOrSlicer);	
 		List<String> includedClassNames = new ArrayList<>();
 		List<String> excludedClassNames = new ArrayList<>();
 	   

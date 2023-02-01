@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import microbat.Activator;
+import microbat.codeanalysis.runtime.StepLimitException;
 import microbat.model.trace.Trace;
 import microbat.model.trace.TraceNode;
 import microbat.model.value.VarValue;
@@ -121,14 +122,22 @@ public class TrialGenerator0 {
 
 		Settings.compilationUnitMap.clear();
 		Settings.iCompilationUnitMap.clear();
-		newRS = newCollector.run(buggyPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+		try {
+			newRS = newCollector.run(buggyPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+		} catch (StepLimitException e) {
+			e.printStackTrace();			
+		}		
 		if (newRS.getRunningType() != NORMAL) {
 			System.out.println("Not normal");
 		}
 
 		Settings.compilationUnitMap.clear();
 		Settings.iCompilationUnitMap.clear();
-		oldRs = oldCollector.run(fixPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+		try {
+			oldRs = oldCollector.run(fixPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+		} catch (StepLimitException e) {
+			e.printStackTrace();			
+		}	
 		if (oldRs.getRunningType() != NORMAL) {
 			System.out.println("Not normal");
 		}
@@ -344,7 +353,11 @@ public class TrialGenerator0 {
 			
 				Settings.compilationUnitMap.clear();
 				Settings.iCompilationUnitMap.clear();
-				newRS = newCollector.run(buggyPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+				try {
+					newRS = newCollector.run(buggyPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);					
+				} catch (StepLimitException e) {
+					e.printStackTrace();			
+				}
 				if (newRS.getRunningType() != NORMAL) {
 					trial = EmpiricalTrial.createDumpTrial(getProblemType(newRS.getRunningType()));
 					return trial;
@@ -352,7 +365,11 @@ public class TrialGenerator0 {
 
 				Settings.compilationUnitMap.clear();
 				Settings.iCompilationUnitMap.clear();
-				oldRs = oldCollector.run(fixPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+				try {
+					oldRs = oldCollector.run(fixPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);									
+				} catch (StepLimitException e) {
+					e.printStackTrace();			
+				}
 				if (oldRs.getRunningType() != NORMAL) {
 					trial = EmpiricalTrial.createDumpTrial(getProblemType(oldRs.getRunningType()));
 					return trial;

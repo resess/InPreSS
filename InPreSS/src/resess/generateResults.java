@@ -1,7 +1,9 @@
 package resess;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -11,6 +13,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import microbat.codeanalysis.runtime.StepLimitException;
+import microbat.instrumentation.output.RunningInfo;
 import microbat.model.trace.Trace;
 import microbat.model.trace.TraceNode;
 import tregression.SimulationFailException;
@@ -77,7 +85,17 @@ public class generateResults {
 
 
 		Long new_trace_start_time = System.currentTimeMillis();
-		newRS = newCollector.run(buggyPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+		try {
+			newRS = newCollector.run(buggyPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+		} catch (StepLimitException e) {
+			if(e.StepLenth == -100)
+				saveUndeterministicBugAndTerminate(basePath,projectName, bugID);
+			else if (e.StepLenth == -200)
+				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
+			else
+				saveBugAndTerminate(basePath,projectName, bugID,0,e.StepLenth);
+			System.exit(0);			
+		}		
 		if (newRS.getRunningType() != NORMAL) {
 			System.out.println("Not normal");
 		}
@@ -85,7 +103,17 @@ public class generateResults {
 		int newTraceTime = (int) (new_trace_finish_time - new_trace_start_time);
 		
 		Long old_trace_start_time = System.currentTimeMillis();
-		oldRs = oldCollector.run(fixPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
+		try {
+			oldRs = oldCollector.run(fixPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);			
+		} catch (StepLimitException e) {
+			if(e.StepLenth == -100)
+				saveUndeterministicBugAndTerminate(basePath,projectName, bugID);
+			else if (e.StepLenth == -200)
+				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
+			else
+				saveBugAndTerminate(basePath,projectName, bugID,oldRs.getRunningTrace().size(),newRS.getRunningTrace().size());			
+			System.exit(0);			
+		}
 		if (oldRs.getRunningType() != NORMAL) {
 			System.out.println("Not normal");
 		}
@@ -102,7 +130,7 @@ public class generateResults {
 			SaveTrace(newRS,oldRs,proPath);
 			//#####################################################
            
-			System.out.println("start matching trace..., new trace length: " + newRS.getRunningTrace().size() + ", old trace length: " + oldRs.getRunningTrace().size());
+			System.out.println("start matching trace..., new trace length: " + newRS.getRunningTrace().size() + ", old trace length: " + oldRs.getRunningTrace().size());		
 			System.out.println("#################################");
 			long code_match_start_time = System.currentTimeMillis();
 			System.out.println("Code Alignement");
@@ -154,7 +182,135 @@ public class generateResults {
 		
 		return;
 	}
-    //////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+     private void saveBugAndTerminate(String basePath, String projectName, String bugID, int oldsize, int newSize) {
+    	String results = basePath+"/results/"+projectName+"Long.xlsx";
+	    File tempFile = new File(results);
+	    boolean FirstTime = false;
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######	
+		if (!tempFile.exists()) {
+	        FirstTime=true;
+	        XSSFWorkbook workbook = new XSSFWorkbook();
+	        XSSFSheet sheet = workbook.createSheet("stats");
+	        try {
+	        	FileOutputStream outputStream = new FileOutputStream(results);
+	            workbook.write(outputStream);
+	            workbook.close();
+	        	outputStream.close();
+	        } catch (Exception e) {
+	        }
+	    }		
+
+        if (FirstTime) {		    	
+	        String[] header = {"Bug ID", "Old trace size (#T)", "New trace size (#T)"};
+	        WriteToExcel(results, header, "stats",false, true);
+	    }
+	    String[] data = {bugID, String.valueOf(oldsize), String.valueOf(newSize)};
+	    WriteToExcel(results,data,"stats",false, false);		
+	}
+     private void saveUndeterministicBugAndTerminate(String basePath, String projectName, String bugID) {
+     	String results = basePath+"/results/"+projectName+"Undeterministic.xlsx";
+ 	    File tempFile = new File(results);
+ 	    boolean FirstTime = false;
+ 	    /////////////////#######////#######////#######////#######////#######////#######
+ 	    /////////////////#######////#######////#######////#######////#######////#######
+ 	    /////////////////#######////#######////#######////#######////#######////#######
+ 	    /////////////////#######////#######////#######////#######////#######////#######	
+ 		if (!tempFile.exists()) {
+ 	        FirstTime=true;
+ 	        XSSFWorkbook workbook = new XSSFWorkbook();
+ 	        XSSFSheet sheet = workbook.createSheet("stats");
+ 	        try {
+ 	        	FileOutputStream outputStream = new FileOutputStream(results);
+ 	            workbook.write(outputStream);
+ 	            workbook.close();
+ 	        	outputStream.close();
+ 	        } catch (Exception e) {
+ 	        }
+ 	    }		
+
+         if (FirstTime) {		    	
+ 	        String[] header = {"Bug ID"};
+ 	        WriteToExcel(results, header, "stats",false, true);
+ 	    }
+ 	    String[] data = {bugID};
+ 	    WriteToExcel(results,data,"stats",false, false);		
+ 	}
+     private void saveMultiThreadBugAndTerminate(String basePath, String projectName, String bugID) {
+      	String results = basePath+"/results/"+projectName+"MultiThread.xlsx";
+  	    File tempFile = new File(results);
+  	    boolean FirstTime = false;
+  	    /////////////////#######////#######////#######////#######////#######////#######
+  	    /////////////////#######////#######////#######////#######////#######////#######
+  	    /////////////////#######////#######////#######////#######////#######////#######
+  	    /////////////////#######////#######////#######////#######////#######////#######	
+  		if (!tempFile.exists()) {
+  	        FirstTime=true;
+  	        XSSFWorkbook workbook = new XSSFWorkbook();
+  	        XSSFSheet sheet = workbook.createSheet("stats");
+  	        try {
+  	        	FileOutputStream outputStream = new FileOutputStream(results);
+  	            workbook.write(outputStream);
+  	            workbook.close();
+  	        	outputStream.close();
+  	        } catch (Exception e) {
+  	        }
+  	    }		
+
+          if (FirstTime) {		    	
+  	        String[] header = {"Bug ID"};
+  	        WriteToExcel(results, header, "stats",false, true);
+  	    }
+  	    String[] data = {bugID};
+  	    WriteToExcel(results,data,"stats",false, false);		
+  	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	public static void WriteToExcel(String ExcelFilePath, String[] RowData, String sheetName,boolean existing,boolean firstTime){
+	    try {
+	  
+	    	    FileInputStream myxls = new FileInputStream(ExcelFilePath);
+	            XSSFWorkbook ExcelWorkbook = new XSSFWorkbook(myxls);
+	            XSSFSheet worksheet;
+	   
+	            if (existing) {
+	            	if (firstTime)
+	            		worksheet = ExcelWorkbook.createSheet(sheetName);
+	            	else 
+	            		worksheet = ExcelWorkbook.getSheet(sheetName);	            		            	
+	            }
+	            else {
+//	            XSSFSheet worksheet = ExcelWorkbook.getSheetAt(id);
+	            	 worksheet = ExcelWorkbook.getSheet(sheetName);
+	            }
+	            int lastRow=worksheet.getLastRowNum();          
+	            if(!firstTime)
+	            	lastRow++;
+	            Row row = worksheet.createRow(lastRow);
+	            for (int index = 0; index < RowData.length; index++) {
+	                row.createCell(index).setCellValue(RowData[index]);
+	            }
+	            
+	            myxls.close();
+	
+	            try {
+	            	FileOutputStream output_file =new FileOutputStream(new File(ExcelFilePath));
+	                ExcelWorkbook.write(output_file);
+	                output_file.close();
+	                ExcelWorkbook.close();
+	            }
+	            catch(Exception e){}
+	    }
+	    catch(Exception e){
+	    }
+	}
+	//////////////////////////////////////////////////////////////////
     private void SaveTrace(RunningResult buggyRS, RunningResult correctRs, String proPath) {
 		PrintWriter writer;
 		try {

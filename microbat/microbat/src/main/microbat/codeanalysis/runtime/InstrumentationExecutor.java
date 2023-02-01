@@ -150,10 +150,19 @@ public class InstrumentationExecutor {
 			System.out.println("the trace length is: " + precheckInfomation.getStepNum());
 			if (precheckInfomation.isUndeterministic()) {
 				System.out.println("undeterministic!!");
+				throw new StepLimitException(-100);
 			} 
 			if (info.isOverLong() /*&& !precheckInfomation.isUndeterministic() */) {
 				System.out.println("over long!!");
-				throw new StepLimitException();
+				throw new StepLimitException(precheckInfomation.getStepNum());
+			}
+			if ((precheckInfomation.getStepNum()>1000000)) {
+				System.out.println("over long!!");
+				throw new StepLimitException(precheckInfomation.getStepNum());
+			}
+			if ((info.getThreadNum()>1)) {
+				System.out.println("multi-thread");
+				throw new StepLimitException(-200);
 			}
 			if (!info.getExceedingLimitMethods().isEmpty()) {
 				agentRunner.addAgentParams(AgentParams.OPT_OVER_LONG_METHODS, info.getExceedingLimitMethods());

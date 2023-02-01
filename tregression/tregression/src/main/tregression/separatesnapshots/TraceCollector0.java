@@ -22,7 +22,7 @@ public class TraceCollector0 {
 	
 	public RunningResult run(String workingDir, TestCase tc, 
 			Defects4jProjectConfig config, boolean isRunInTestCaseMode, boolean allowMultiThread, 
-			List<String> includeLibs, List<String> excludeLibs){
+			List<String> includeLibs, List<String> excludeLibs) throws StepLimitException{
 		
 		AppJavaClassPath appClassPath = AppClassPathInitializer.initialize(workingDir, tc, config);
 		if(!isRunInTestCaseMode) {
@@ -38,7 +38,8 @@ public class TraceCollector0 {
 		try {
 			info = exectuor.run();
 		} catch (StepLimitException e) {
-			e.printStackTrace();
+//			e.printStackTrace();			
+			throw new StepLimitException(e.StepLenth);
 		}
 		
 		PreCheckInformation precheckInfo = exectuor.getPrecheckInfo();
