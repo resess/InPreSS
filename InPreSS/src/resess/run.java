@@ -2,15 +2,18 @@ package resess;
 
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 public class run {
 
 	public static void main(String[] args) throws NumberFormatException, IOException, InterruptedException {
 		 boolean debug = false;
-
+		    
 		generateResults generatoror = new generateResults();
 		
 		//String basePath = "/Users/.../bug_repos/";
@@ -27,7 +30,8 @@ public class run {
 		//String testcase = "com.google.javascript.jscomp.IntegrationTest::testIssue787"; //clousr(1)
 		String testcase = args[3];
 		
-		String EreasOrSlicer = args[4];
+//		String EreasOrSlicer = args[4];
+		String EreasOrSlicer = "E";
 		
 		String proPath = basePath + projectName + "/" + bugID;
 		String buggyPath = proPath + "/bug";

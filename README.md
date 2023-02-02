@@ -67,7 +67,7 @@ Note that InPreSS, Microbat, and TRegression projects are Eclipse plugin project
 ---
 ---
 
-### Running the Tool Through the Docker Image
+## Running the Tool Through the Docker Image
 A docker image with required dependencies is available for easy use and evaluation of the artifacts. The docker image includes the implemented InPreSS tool.
 
 To download and open the container, run the following two commands (**Note:** downloading the docker image may take more or less time depending on the Internet speed)
@@ -146,7 +146,8 @@ You can run each bugs similar to running our subjects.
 
 ## Running the Tool Through the Jar 
 
-Run the code through the jar (including dependencies): 
+We also provide a jar file in zenodo: 10.5281/zenodo.7578608
+After unzipping the folder you can run InPreSS through the jar (including dependencies): 
 
 ```
 cd InPreSS
