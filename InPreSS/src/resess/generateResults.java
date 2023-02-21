@@ -80,21 +80,25 @@ public class generateResults {
 		RunningResult oldRs = null;
 
 		DiffMatcher diffMatcher = null;
-		PairList dualPairList = null;
-		PairList inPreSSPairList = null;	
-
+		PairList PairList = null;
 
 		Long new_trace_start_time = System.currentTimeMillis();
 		try {
 			newRS = newCollector.run(buggyPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);
 		} catch (StepLimitException e) {
-			if(e.StepLenth == -100)
+			if(e.StepLenth == -100) {
 				saveUndeterministicBugAndTerminate(basePath,projectName, bugID);
-			else if (e.StepLenth == -200)
-				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
-			else
+				System.exit(0);			
+			}
+			else if (e.StepLenth == -200) {
+//				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
+//				System.exit(0);			
+			}
+			else {
 				saveBugAndTerminate(basePath,projectName, bugID,0,e.StepLenth);
-			System.exit(0);			
+				System.exit(0);			
+			}
+			
 		}		
 		if (newRS.getRunningType() != NORMAL) {
 			System.out.println("Not normal");
@@ -106,13 +110,19 @@ public class generateResults {
 		try {
 			oldRs = oldCollector.run(fixPath, tc, config, isRunInTestCaseMode, allowMultiThread, includedClassNames, excludedClassNames);			
 		} catch (StepLimitException e) {
-			if(e.StepLenth == -100)
+			if(e.StepLenth == -100) {
 				saveUndeterministicBugAndTerminate(basePath,projectName, bugID);
-			else if (e.StepLenth == -200)
-				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
-			else
-				saveBugAndTerminate(basePath,projectName, bugID,oldRs.getRunningTrace().size(),newRS.getRunningTrace().size());			
-			System.exit(0);			
+				System.exit(0);			
+			}
+			else if (e.StepLenth == -200) {
+//				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
+//				System.exit(0);			
+			}
+			else {
+				saveBugAndTerminate(basePath,projectName, bugID,oldRs.getRunningTrace().size(),newRS.getRunningTrace().size());	
+				System.exit(0);
+			}
+				
 		}
 		if (oldRs.getRunningType() != NORMAL) {
 			System.out.println("Not normal");
@@ -144,8 +154,10 @@ public class generateResults {
 			System.out.println("Trace Alignement");
 			long trace_match_start_time = System.currentTimeMillis();
 			ControlPathBasedTraceMatcher traceMatcher = new ControlPathBasedTraceMatcher();
-			dualPairList = traceMatcher.matchTraceNodePair(newRS.getRunningTrace(), oldRs.getRunningTrace(), diffMatcher,"dual");
-//			inPreSSPairList = traceMatcher.matchTraceNodePair(newRS.getRunningTrace(), oldRs.getRunningTrace(), diffMatcher,"inPreSS");
+			if (projectName.contentEquals("InPreSS"))
+				PairList = traceMatcher.matchTraceNodePair(newRS.getRunningTrace(), oldRs.getRunningTrace(), diffMatcher,"dual");
+			else
+				PairList = traceMatcher.matchTraceNodePair(newRS.getRunningTrace(), oldRs.getRunningTrace(), diffMatcher,"inPreSS");
 			long trace_match_finish_time = System.currentTimeMillis();					
 			traceTime = (int) (trace_match_finish_time - trace_match_start_time);
 			System.out.println("finish matching trace, taking " + traceTime + "ms");
@@ -158,14 +170,12 @@ public class generateResults {
 				
 		System.out.println("#################################");
 		RootCauseFinder rootcauseFinder = new RootCauseFinder();
-//		rootcauseFinder.setRootCauseBasedOnDefects4J(inPreSSPairList, diffMatcher, newTrace, oldTrace);
-		rootcauseFinder.setRootCauseBasedOnDefects4J(dualPairList, diffMatcher, newTrace, oldTrace);
+		rootcauseFinder.setRootCauseBasedOnDefects4J(PairList, diffMatcher, newTrace, oldTrace);
 		
 		//////////////////////////
 		System.out.println("#################################");
 		Simulator simulator = new Simulator(useSliceBreaker, enableRandom, breakLimit);
-//		simulator.prepare(newTrace, oldTrace, inPreSSPairList, diffMatcher);//parents in getObservedFault
-		simulator.prepare(newTrace, oldTrace, dualPairList, diffMatcher);//parents in getObservedFault
+		simulator.prepare(newTrace, oldTrace, PairList, diffMatcher);//parents in getObservedFault
 		//System.out.println(simulator.getObservedFault());
 		TraceNode observedFaultNode = simulator.getObservedFault();
 		
@@ -173,11 +183,11 @@ public class generateResults {
 		System.out.println("###############Dual slicing##################");
 		if (eraseorDual.equals("S")){
 			dualSlicingWithConfigS configS = new dualSlicingWithConfigS();
-			configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
+			configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
 		}
 		else if (eraseorDual.equals("E")){
 			dualSlicingWithConfigE configE = new dualSlicingWithConfigE();
-			configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, dualPairList, inPreSSPairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+			configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
 		}
 		
 		return;

@@ -19,11 +19,13 @@ public class AppClassPathInitializer {
 		String testTargetPath = workingDir + File.separator + config.bytecodeTestFolder;
 		String codeTargetPath = workingDir + File.separator + config.bytecodeSourceFolder;
 		String depTargetPath = workingDir + File.separator + "target" + File.separator+ "dependency/*";
+		String dep2TargetPath = workingDir + File.separator + "lib/*";
 		
 		
 		appClassPath.addClasspath(testTargetPath);
 		appClassPath.addClasspath(codeTargetPath);
 		appClassPath.addClasspath(depTargetPath);//debug: added dependency
+		appClassPath.addClasspath(dep2TargetPath);//debug: added dependency
 		List<String> libJars = findLibJars(workingDir+File.separator+"lib");
 		for(String libJar: libJars) {
 			appClassPath.addClasspath(libJar);

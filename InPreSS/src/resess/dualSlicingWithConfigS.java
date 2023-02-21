@@ -214,7 +214,7 @@ public class dualSlicingWithConfigS {
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public void dualSlicing(String basePath, String projectName, String bugID, TestCase tc, boolean slicer4J, String proPath, TraceNode observedFaultNode, Trace newTrace,
-			Trace oldTrace, PairList dualPairList,PairList InPreSSPairList, DiffMatcher matcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> rootList,boolean debug) throws IOException {
+			Trace oldTrace, PairList PairList, DiffMatcher matcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> rootList,boolean debug) throws IOException {
 	
 		List<TraceNode> new_workList = new ArrayList<>();
 		List<TraceNode> new_visited = new ArrayList<>();
@@ -279,7 +279,7 @@ public class dualSlicingWithConfigS {
 				updateWorklist(newTheReasonToBeInResult, oldTheReasonToBeInResult, new_dcfg, new_slicer, old_dcfg,
 						old_slicer, new_CashDeps, old_CashDeps, newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
 						oldSlicer4JBytecodeMapping, slicer4J, step, newTrace, oldTrace, new_visited, new_workList,
-						old_visited, old_workList, true, typeChecker, dualPairList, matcher, new_data_map, new_ctl_map,
+						old_visited, old_workList, true, typeChecker, PairList, matcher, new_data_map, new_ctl_map,
 						proPath, bugID);
 			}
 			////////////////////////////////////////////////////////////////////////////////////////
@@ -289,7 +289,7 @@ public class dualSlicingWithConfigS {
 				updateWorklist(oldTheReasonToBeInResult, newTheReasonToBeInResult, new_dcfg, new_slicer, old_dcfg,
 						old_slicer, old_CashDeps, new_CashDeps, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping,
 						newSlicer4JBytecodeMapping, slicer4J, step, oldTrace, newTrace, old_visited, old_workList,
-						new_visited, new_workList, false, typeChecker, dualPairList, matcher, old_data_map, old_ctl_map,
+						new_visited, new_workList, false, typeChecker, PairList, matcher, old_data_map, old_ctl_map,
 						proPath, bugID);
 			}
 		}
@@ -342,7 +342,7 @@ public class dualSlicingWithConfigS {
 		HashMap<Integer, List<TraceNode>> newDataBlockNodes = new HashMap<>();
 		long inPreSS_start_time = System.currentTimeMillis();
 		InPreSSAbstractionCircleOnlySameFunctionsCommonTrianlges(tc, proPath, old_visited, new_visited, typeChecker,
-				dualPairList, InPreSSPairList, matcher, both_old_data_map, both_old_ctl_map, both_new_data_map,
+				PairList, matcher, both_old_data_map, both_old_ctl_map, both_new_data_map,
 				both_new_ctl_map, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping,
 				new_dcfg, new_slicer, old_dcfg, old_slicer, old_kept, new_kept, oldDataBlockNodes, newDataBlockNodes,
 				oldCtlBlockNodes, newCtlBlockNodes, old_retained, new_retained);
@@ -1099,7 +1099,7 @@ public class dualSlicingWithConfigS {
 
 	private void InPreSSAbstractionCircleOnlySameFunctionsCommonTrianlges(TestCase tc, String proPath, List<TraceNode> old_visited,
 			List<TraceNode> new_visited, StepChangeTypeChecker typeChecker,
-			PairList dualPairList,PairList inPreSSPairList, DiffMatcher matcher, HashMap<TraceNode, List<Pair<TraceNode, String>>> old_data_map,
+			PairList pairList, DiffMatcher matcher, HashMap<TraceNode, List<Pair<TraceNode, String>>> old_data_map,
 			HashMap<TraceNode, List<TraceNode>> old_ctl_map,
 			HashMap<TraceNode, List<Pair<TraceNode, String>>> new_data_map,
 			HashMap<TraceNode, List<TraceNode>> new_ctl_map, BiMap<TraceNode, String> oldSlicer4J,
@@ -1111,8 +1111,6 @@ public class dualSlicingWithConfigS {
 			HashMap<Integer, List<TraceNode>> newCtlBlockNodes, List<TraceNode> old_retained,
 			List<TraceNode> new_retained) {
 		/////////////////////////////////////////////////////////////
-		PairList pairList = dualPairList;
-//		PairList pairList = inPreSSPairList;
 //		Collections.sort(old_visited, new TraceNodePairOrderComparator(oldSlicer4J, oldSlicer4JBytecodeMapping));
 //		Collections.sort(new_visited, new TraceNodePairOrderComparator(newSlicer4J, newSlicer4JBytecodeMapping));
 		///////////////////// extract blocks for old/////////////////////

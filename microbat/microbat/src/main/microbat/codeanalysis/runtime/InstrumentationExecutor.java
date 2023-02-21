@@ -162,10 +162,10 @@ public class InstrumentationExecutor {
 				System.out.println("over long!!");
 				throw new StepLimitException(precheckInfomation.getStepNum());
 			}
-			if ((secondPrecheckInfo.getThreadNum()>1)) {
-				System.out.println("multi-thread");
-				throw new StepLimitException(-200);
-			}
+//			if ((secondPrecheckInfo.getThreadNum()>1)) {
+//				System.out.println("multi-thread");
+//				throw new StepLimitException(-200);
+//			}
 			if (!secondPrecheckInfo.getExceedingLimitMethods().isEmpty()) {
 				agentRunner.addAgentParams(AgentParams.OPT_OVER_LONG_METHODS, secondPrecheckInfo.getExceedingLimitMethods());
 			}

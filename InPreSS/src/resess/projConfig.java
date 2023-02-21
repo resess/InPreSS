@@ -136,6 +136,20 @@ public class projConfig extends Defects4jProjectConfig{
 					getSlice(baseProjPath,  "target"+File.separator+"tests","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			   
 			}
+			else if(bugID>=36 && bugID<=41){
+				Path newPath = Paths.get(buggyPath+"target"+File.separator+"classes");
+	            Path oldPath = Paths.get(fixPath+"target"+File.separator+"classes");
+	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"test-classes");
+	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"test-classes");
+				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+					saveBugAndTerminate(baseProjPath,projectName, bugID);
+					System.exit(0);
+				}
+				config = new projConfig("src"+File.separator+"test", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);				
+				config.configFile = ereasOrSlicer;
+				if(config.configFile.contentEquals("S"))
+					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+			}
 			else if(bugID<42){
 				Path newPath = Paths.get(buggyPath+"target"+File.separator+"classes");
 	            Path oldPath = Paths.get(fixPath+"target"+File.separator+"classes");
@@ -165,10 +179,10 @@ public class projConfig extends Defects4jProjectConfig{
 					getSlice(baseProjPath,  "target"+File.separator+"tests","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			
-			if(bugID>=36 && bugID<=41){
-				config.srcSourceFolder = "src"+File.separator+"java";
-				config.srcTestFolder = "src"+File.separator+"test";
-			}
+//			if(bugID>=36 && bugID<=41){
+//				config.srcSourceFolder = "src"+File.separator+"java";
+//				config.srcTestFolder = "src"+File.separator+"test";
+//			}
 		}
 		
 		else if (projectName.equals("Math")) {
