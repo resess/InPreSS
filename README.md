@@ -67,25 +67,6 @@ Note that InPreSS, Microbat, and TRegression projects are Eclipse plugin project
 ---
 ---
 
-## Running the Tool Through the Docker Image
-A docker image with required dependencies is available for easy use and evaluation of the artifacts. The docker image includes the implemented InPreSS tool.
-
-To download and open the container, run the following two commands (**Note:** downloading the docker image may take more or less time depending on the Internet speed)
-```
-docker pull saharbadihi/inpress:latest
-docker run -it saharbadihi/inpress:latest
-```
-
-InPreSS code is available under `/review` main directory.
-This directory is the default work directory of the docker container. However, you can navigate to it as follows:
-
-```
-cd /review
-```
-
----
----
-
 ## Running the Tool Through the Plugin 
 ### General guideline: Running with Main() method in Run
 Now, you can run InPreSS through the main method in the run class (run as "Java Application"):
