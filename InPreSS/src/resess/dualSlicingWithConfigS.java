@@ -1115,8 +1115,8 @@ public class dualSlicingWithConfigS {
 		/////////////////////////////////////////////////////////////
 //		Collections.sort(old_visited, new TraceNodePairOrderComparator(oldSlicer4J, oldSlicer4JBytecodeMapping));
 //		Collections.sort(new_visited, new TraceNodePairOrderComparator(newSlicer4J, newSlicer4JBytecodeMapping));
-		System.out.println(old_visited.size());
-		System.out.println(new_visited.size());
+//		System.out.println(old_visited.size());
+//		System.out.println(new_visited.size());
 		///////////////////// extract blocks for old/////////////////////
 		HashMap<TraceNode, Integer> oldBlocks = new HashMap<>();
 		Integer BlockID = 0;
