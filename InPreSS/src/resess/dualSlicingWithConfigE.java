@@ -371,6 +371,8 @@ public class dualSlicingWithConfigE {
 		List<TraceNode> new_kept = new ArrayList<>();		
 		List<TraceNode> old_retained = new ArrayList<>();		
 		List<TraceNode> new_retained = new ArrayList<>();
+		List<String> old_kept_sourceCodeLevel = new ArrayList<>();		
+		List<String> new_kept_sourceCodeLevel = new ArrayList<>();
 
 //		addingClientTestNodes(tc, oldTrace.getExecutionList(), newTrace.getExecutionList(), old_kept, new_kept, old_retained, new_retained);
 		//keep statements in the test that are kept in dual slice:
@@ -385,7 +387,7 @@ public class dualSlicingWithConfigE {
 		long inPreSS_start_time = System.currentTimeMillis();	
 		inPreSSAbstractionCircleOnlySameFunctionsCommonTrianlges(tc, proPath, old_visited,new_visited,typeChecker,PairList, 
 				matcher,both_old_data_map,both_old_ctl_map,both_new_data_map,both_new_ctl_map,old_kept, new_kept, 
-				oldDataBlockNodes, newDataBlockNodes, oldCtlBlockNodes, newCtlBlockNodes, old_retained, new_retained);
+				oldDataBlockNodes, newDataBlockNodes, oldCtlBlockNodes, newCtlBlockNodes, old_retained, new_retained,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
 		long inPreSS_finish_time = System.currentTimeMillis();			
 		int inPreSS_Time = (int) (inPreSS_finish_time - inPreSS_start_time);
 		System.out.println("##############Saving Results##############");	
@@ -399,7 +401,7 @@ public class dualSlicingWithConfigE {
 						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
 						oldCommonChunkInfo, newCommonChunkInfo,
-						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
 				PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
 						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
@@ -409,7 +411,7 @@ public class dualSlicingWithConfigE {
 				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
 				oldCommonChunkInfo, newCommonChunkInfo,
-				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
 			
 		}
 	}
@@ -426,33 +428,53 @@ public class dualSlicingWithConfigE {
 		    updateWorklistSlice(slice,workList,dualPairList,slice_CashDeps, step, newTrace,typeChecker,matcher);				
 		}
 	    
+		 List<String> UniqueStmtsTraceList = new ArrayList<String>();
+		 List<String> UniqueStmtsSliceList = new ArrayList<String>();
+		 List<String> UniquemethodsTraceList = new ArrayList<String>();
+		 List<String> UniquemethodsSliceList = new ArrayList<String>();
 		 List<String> StmtsTraceList = new ArrayList<String>();
 		 List<String> StmtsSliceList = new ArrayList<String>();
 		 List<String> methodsTraceList = new ArrayList<String>();
 		 List<String> methodsSliceList = new ArrayList<String>();
+	     String previousMethod = "";
 		 for(int i=0; i<newTrace.size(); i++) {				
 			String temp = newTrace.getExecutionList().get(i).getClassCanonicalName();
 			String methodName = newTrace.getExecutionList().get(i).getMethodName();
 			if(methodName != null){
 				temp = temp + ":" + methodName;
 			}
-			if(!methodsTraceList.contains(temp))//add unique methods
+			
+			if(!previousMethod.contains(temp)) {
+				previousMethod=temp;
 				methodsTraceList.add(temp);
+			}
+			if(!UniquemethodsTraceList.contains(temp))//add unique methods
+				UniquemethodsTraceList.add(temp);
+			
 			temp = temp + ":" + newTrace.getExecutionList().get(i).getLineNumber();
-			if(!StmtsTraceList.contains(temp))//add unique statements
-				StmtsTraceList.add(temp);	        
+			StmtsTraceList.add(temp);
+			if(!UniqueStmtsTraceList.contains(temp))//add unique statements
+				UniqueStmtsTraceList.add(temp);	        
 		 }
+		 previousMethod = "";
 		 for(int i=0; i<slice.size(); i++) {				
 				String temp = slice.get(i).getClassCanonicalName();
 				String methodName = slice.get(i).getMethodName();
 				if(methodName != null){
 					temp = temp + ":" + methodName;
 				}
-				if(!methodsSliceList.contains(temp))
+				
+				if(!previousMethod.contains(temp)) {
+					previousMethod=temp;
 					methodsSliceList.add(temp);
+				}
+				if(!UniquemethodsSliceList.contains(temp))
+					UniquemethodsSliceList.add(temp);
+				
 				temp = temp + ":" + slice.get(i).getLineNumber();
-				if(!StmtsSliceList.contains(temp))
-					StmtsSliceList.add(temp);	        
+				StmtsSliceList.add(temp);
+				if(!UniqueStmtsSliceList.contains(temp))
+					UniqueStmtsSliceList.add(temp);	        
 		 }
 			String results = basePath+"/results/SliceStats.xlsx";
 			File tempFile = new File(results);
@@ -470,13 +492,21 @@ public class dualSlicingWithConfigE {
 			   }
 			 }		
 			 if (FirstTime) {		    	
-			     String[] header = {"project Name", "Bug ID", "# Stmt instances in Trace", "# Unique Stmts in Trace", "# Unique Stmts in Slice", "Stmts Reduction", "# Unique Methods in Trace", "# Unique Methods in Slice","Methods Reduction"};
+			     String[] header = {"project Name", "Bug ID", "# Unique Stmt instances in Trace", "# Unique Stmt instances in Slice","Unique Stmts Reduction", "# Stmts in Trace", "# Stmts in Slice", "Stmts Reduction", "# Unique Methods in Trace", "# Unique Methods in Slice"," Unique Methods Reduction", "# Methods in Trace", "# Methods in Slice","Methods Reduction"};
 			     WriteToExcel(results, header, "stats",false, true);
 			 }
+			 double UniqestmtReduc = ((Double.valueOf(UniqueStmtsTraceList.size())-Double.valueOf(UniqueStmtsSliceList.size()))/Double.valueOf(UniqueStmtsTraceList.size())) * 100.0;
+			 double UniqemethodsReduc = ((Double.valueOf(UniquemethodsTraceList.size())-Double.valueOf(UniquemethodsSliceList.size()))/Double.valueOf(UniquemethodsTraceList.size())) * 100.0;
 			 double stmtReduc = ((Double.valueOf(StmtsTraceList.size())-Double.valueOf(StmtsSliceList.size()))/Double.valueOf(StmtsTraceList.size())) * 100.0;
 			 double methodsReduc = ((Double.valueOf(methodsTraceList.size())-Double.valueOf(methodsSliceList.size()))/Double.valueOf(methodsTraceList.size())) * 100.0;
-			 String[] data = {projectName, bugID, String.valueOf(newTrace.size()), String.valueOf(StmtsTraceList.size()),String.valueOf(StmtsSliceList.size()),String.valueOf(stmtReduc),String.valueOf(methodsTraceList.size()),String.valueOf(methodsSliceList.size()),String.valueOf(methodsReduc)};
-			 WriteToExcel(results,data,"stats",false, false);				
+			 
+			 String[] data = {projectName, bugID, 
+					 String.valueOf(UniqueStmtsTraceList.size()),String.valueOf(UniqueStmtsSliceList.size()),String.valueOf(UniqestmtReduc),
+					 String.valueOf(StmtsTraceList.size()),String.valueOf(StmtsSliceList.size()),String.valueOf(stmtReduc),
+					 String.valueOf(UniquemethodsTraceList.size()),String.valueOf(UniquemethodsSliceList.size()),String.valueOf(UniqemethodsReduc),
+					 String.valueOf(methodsTraceList.size()),String.valueOf(methodsSliceList.size()),String.valueOf(methodsReduc)};
+			 WriteToExcel(results,data,"stats",false, false);
+			 System.exit(0);
 	 }
 	    	
 	private void updateWorklistSlice(List<TraceNode> slice, List<TraceNode> workList, PairList dualPairList, HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> slice_CashDeps, TraceNode step, Trace newTrace,StepChangeTypeChecker typeChecker, DiffMatcher matcher) {
@@ -934,7 +964,7 @@ public class dualSlicingWithConfigE {
 			HashMap<TraceNode, List<Pair<TraceNode, String>>> new_data_map, HashMap<TraceNode, List<TraceNode>> new_ctl_map, 
 			List<TraceNode> old_kept, List<TraceNode> new_kept, HashMap<Integer, List<TraceNode>> oldDataBlockNodes, 
 			HashMap<Integer, List<TraceNode>> newDataBlockNodes,HashMap<Integer, List<TraceNode>> oldCtlBlockNodes,
-			HashMap<Integer, List<TraceNode>> newCtlBlockNodes, List<TraceNode> old_retained, List<TraceNode> new_retained) {
+			HashMap<Integer, List<TraceNode>> newCtlBlockNodes, List<TraceNode> old_retained, List<TraceNode> new_retained,List<String> old_kept_sourceCodeLevel, List<String> new_kept_sourceCodeLevel) {
 		/////////////////////////////////////////////////////////////
 		Collections.sort(old_visited, new TraceNodeOrderComparator());
 		Collections.sort(new_visited, new TraceNodeOrderComparator());                	
@@ -1262,16 +1292,23 @@ public class dualSlicingWithConfigE {
 				else if(changeType.getType()!=0) {//not identical
 					if(!old_retained.contains(step))
 						old_retained.add(step);
-					if(!old_kept.contains(step))
-						old_kept.add(step);					
+					if(!old_kept.contains(step)) {
+						old_kept.add(step);	
+						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
+							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));
+					
+					}
 				}
 				List<Pair<TraceNode, String>> data_deps = old_data_map.get(step);				
 				if(data_deps!=null) 
 					for(Pair<TraceNode, String> pair:data_deps) 
 						if(old_visited.contains(pair.first()))
 							if(oldBlocks.get(pair.first())!=oldBlocks.get(step))//keep the dep
-								if(!old_kept.contains(pair.first()))
+								if(!old_kept.contains(pair.first())) {
 									old_kept.add(pair.first());
+									if (!old_kept_sourceCodeLevel.contains(getSourceCode(pair.first(),false,matcher)))
+										old_kept_sourceCodeLevel.add(getSourceCode(pair.first(),false,matcher));
+								}
 				
 	//			List<TraceNode> ctl_deps = old_ctl_map.get(step);
 	//			if(ctl_deps!=null) 
@@ -1311,6 +1348,8 @@ public class dualSlicingWithConfigE {
 					}
 					if(!new_kept.contains(step)) {
 						new_kept.add(step);
+						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
+							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));					
 					}
 				}
 				List<Pair<TraceNode, String>> data_deps = new_data_map.get(step);				
@@ -1318,8 +1357,11 @@ public class dualSlicingWithConfigE {
 					for(Pair<TraceNode, String> pair:data_deps) 
 						if(new_visited.contains(pair.first()))
 							if(newBlocks.get(pair.first())!=newBlocks.get(step))//keep the dep
-								if(!new_kept.contains(pair.first()))
+								if(!new_kept.contains(pair.first())) {
 									new_kept.add(pair.first());
+									if (!new_kept_sourceCodeLevel.contains(getSourceCode(pair.first(),true,matcher)))
+										new_kept_sourceCodeLevel.add(getSourceCode(pair.first(),true,matcher));
+								}
 				
 	//			List<TraceNode> ctl_deps = new_ctl_map.get(step);
 	//			if(ctl_deps!=null) 
@@ -1337,20 +1379,32 @@ public class dualSlicingWithConfigE {
 			for(TraceNode n: old_dat_kept) {
 				if(!old_kept.contains(n)) {
 				  old_kept.add(n);
+				  if (!old_kept_sourceCodeLevel.contains(getSourceCode(n,false,matcher)))
+						old_kept_sourceCodeLevel.add(getSourceCode(n,false,matcher));					
+				
 				  }
 			}
 			for(TraceNode n: new_dat_kept) {
 				if(!new_kept.contains(n)) {
 				  new_kept.add(n);
+				  if (!new_kept_sourceCodeLevel.contains(getSourceCode(n,true,matcher)))
+						new_kept_sourceCodeLevel.add(getSourceCode(n,true,matcher));
+								
 				}
 			}
 			if (old_kept.size()==0) {				
 			    old_kept.add(old_visited.get(old_visited.size()-1));
+			    if (!old_kept_sourceCodeLevel.contains(getSourceCode(old_visited.get(old_visited.size()-1),false,matcher)))
+					old_kept_sourceCodeLevel.add(getSourceCode(old_visited.get(old_visited.size()-1),false,matcher));					
+			
 //			    if(!old_retained.contains(old_visited.get(old_visited.size()-1)))
 //			    	old_retained.add(old_visited.get(old_visited.size()-1));
 			}
 			if (new_kept.size()==0) {		
 			    new_kept.add(new_visited.get(new_visited.size()-1));
+			    if (!new_kept_sourceCodeLevel.contains(getSourceCode(new_visited.get(new_visited.size()-1),true,matcher)))
+					new_kept_sourceCodeLevel.add(getSourceCode(new_visited.get(new_visited.size()-1),true,matcher));
+//			    
 //			    if(!new_retained.contains(new_visited.get(new_visited.size()-1)))
 //			    	new_retained.add(new_visited.get(new_visited.size()-1));
 			}
@@ -2166,7 +2220,7 @@ public class dualSlicingWithConfigE {
 			int traceTime, int dualTime, int InPreSSTime, HashMap<Integer, Integer> oldChangeChunkInfo, HashMap<Integer, Integer> newChangeChunkInfo, 
 			HashMap<Integer, Integer> oldTestCaseChunkInfo, HashMap<Integer, Integer> newTestCaseChunkInfo, 
 			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
-			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual) throws IOException {
+			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual,List<String> old_kept_sourceCodeLevel, List<String> new_kept_sourceCodeLevel) throws IOException {
 		  
 			Path path = Paths.get(basePath+"/results");
 			if(!Files.exists(path)) 
@@ -2470,7 +2524,10 @@ public class dualSlicingWithConfigE {
 		       WriteToExcel(results,detailedDataRQ2,"RQ2",true,false);
 		    
 			
-			System.out.println("##############Finish##############");
+//				System.out.println("##############Source code statement##############");
+//				System.out.println(old_kept_sourceCodeLevel.size());
+//				System.out.println(new_kept_sourceCodeLevel.size());
+				System.out.println("##############Finish##############");
 						
 	}	
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2484,7 +2541,7 @@ public class dualSlicingWithConfigE {
 			int traceTime, int dualTime, int InPreSSTime, HashMap<Integer, Integer> oldChangeChunkInfo, HashMap<Integer, Integer> newChangeChunkInfo, 
 			HashMap<Integer, Integer> oldTestCaseChunkInfo, HashMap<Integer, Integer> newTestCaseChunkInfo, 
 			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
-			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual) throws IOException {
+			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual,List<String> old_kept_sourceCodeLevel, List<String> new_kept_sourceCodeLevel ) throws IOException {
 		  
 			Path path = Paths.get(basePath+"/results");
 			if(!Files.exists(path)) 
@@ -2517,15 +2574,15 @@ public class dualSlicingWithConfigE {
 	
             if (FirstTime) {		    	
 		        String[] header = {"Bug ID", 
-		        		"Old trace size (#T)","Old Dual size(#DSlice)", "%Old Reduction", "#Chg", "Old InPreSS size(#InPreSS)", "%Old InPreSS Reduction",
-		        		"New trace size (#T)","New Dual size(#DSlice)", "%New Reduction", "#Chg", "New InPreSS size(#InPreSS)", "%New InPreSS Reduction",  
+		        		"Old trace size (#T)","Old Dual size(#DSlice)", "%Old Reduction", "#Chg", "Old InPreSS size(#InPreSS)", "%Old InPreSS Reduction","Old InPreSS size(Source Code leve)",
+		        		"New trace size (#T)","New Dual size(#DSlice)", "%New Reduction", "#Chg", "New InPreSS size(#InPreSS)", "%New InPreSS Reduction","New InPreSS size(Source Code leve)",
 		        		"DSlice Time (Min)", "InPreSS Time (Min)"
 		        		};
 		        WriteToExcel(results, header, "stats",false, true);
 		    }
 		    String[] data = {bugID, 
-		    		String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(old_visited.size()), String.valueOf(oldReduction), String.valueOf(oldChangeChunkInfo.keySet().size()), String.valueOf(old_kept.size()), String.valueOf(InPreSSoldReduction), 
-		    		String.valueOf(newTrace.getExecutionList().size()), String.valueOf(new_visited.size()), String.valueOf(newReduction), String.valueOf(newChangeChunkInfo.keySet().size()), String.valueOf(new_kept.size()), String.valueOf(InPreSSnewReduction), 
+		    		String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(old_visited.size()), String.valueOf(oldReduction), String.valueOf(oldChangeChunkInfo.keySet().size()), String.valueOf(old_kept.size()), String.valueOf(InPreSSoldReduction), String.valueOf(old_kept_sourceCodeLevel.size()),
+		    		String.valueOf(newTrace.getExecutionList().size()), String.valueOf(new_visited.size()), String.valueOf(newReduction), String.valueOf(newChangeChunkInfo.keySet().size()), String.valueOf(new_kept.size()), String.valueOf(InPreSSnewReduction), String.valueOf(new_kept_sourceCodeLevel.size()),
 		    		String.valueOf((Double.valueOf(dualTime)/1000.0)/60.0), String.valueOf((Double.valueOf(InPreSSTime)/1000.0)/60.0)
 		    		};
 		    WriteToExcel(results,data,"stats",false, false);

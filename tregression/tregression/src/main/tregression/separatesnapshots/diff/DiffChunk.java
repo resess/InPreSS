@@ -11,7 +11,8 @@ public class DiffChunk {
 	private int chunkLengthInTarget;
 	
 	private List<LineChange> changeList = new ArrayList<>();
-
+    private ArrayList<Integer> changes = new ArrayList<>();
+    
 	public DiffChunk(int startLineInSource, int chunkLengthInSource, int startLineInTarget, int chunkLengthInTarget) {
 		super();
 		this.startLineInSource = startLineInSource;
@@ -19,9 +20,20 @@ public class DiffChunk {
 		this.startLineInTarget = startLineInTarget;
 		this.chunkLengthInTarget = chunkLengthInTarget;
 	}
+	public DiffChunk(int startLineInSource, int chunkLengthInSource, int startLineInTarget, int chunkLengthInTarget, ArrayList<Integer> chanes) {
+		super();
+		this.startLineInSource = startLineInSource;
+		this.chunkLengthInSource = chunkLengthInSource;
+		this.startLineInTarget = startLineInTarget;
+		this.chunkLengthInTarget = chunkLengthInTarget;
+		this.changes = changes;
+	}
 
 	public int getStartLineInSource() {
 		return startLineInSource;
+	}
+	public ArrayList<Integer> getChanges() {
+		return this.changes;
 	}
 
 	public void setStartLineInSource(int startLineInSource) {

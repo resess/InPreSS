@@ -326,6 +326,8 @@ public class dualSlicingWithConfigS {
 		List<TraceNode> new_kept = new ArrayList<>();		
 		List<TraceNode> old_retained = new ArrayList<>();		
 		List<TraceNode> new_retained = new ArrayList<>();	
+		List<String> old_kept_sourceCodeLevel = new ArrayList<>();		
+		List<String> new_kept_sourceCodeLevel = new ArrayList<>();	
 		
 		//keep all statements in the test even if they remove by dual slice:
 		//addingClientTestNodes(tc, oldTrace.getExecutionList(), newTrace.getExecutionList(), old_kept, new_kept, old_retained, new_retained, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping);		
@@ -345,7 +347,7 @@ public class dualSlicingWithConfigS {
 				PairList, matcher, both_old_data_map, both_old_ctl_map, both_new_data_map,
 				both_new_ctl_map, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping,
 				new_dcfg, new_slicer, old_dcfg, old_slicer, old_kept, new_kept, oldDataBlockNodes, newDataBlockNodes,
-				oldCtlBlockNodes, newCtlBlockNodes, old_retained, new_retained);
+				oldCtlBlockNodes, newCtlBlockNodes, old_retained, new_retained,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
 		long inPreSS_finish_time = System.currentTimeMillis();
 		int inPreSS_Time = (int) (inPreSS_finish_time - inPreSS_start_time);
 		if(debug)
@@ -359,7 +361,7 @@ public class dualSlicingWithConfigS {
 				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
 				oldCommonChunkInfo, newCommonChunkInfo,
-				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1109,10 +1111,12 @@ public class dualSlicingWithConfigS {
 			List<TraceNode> new_kept, HashMap<Integer, List<TraceNode>> oldDataBlockNodes,
 			HashMap<Integer, List<TraceNode>> newDataBlockNodes, HashMap<Integer, List<TraceNode>> oldCtlBlockNodes,
 			HashMap<Integer, List<TraceNode>> newCtlBlockNodes, List<TraceNode> old_retained,
-			List<TraceNode> new_retained) {
+			List<TraceNode> new_retained, List<String> old_kept_sourceCodeLevel, List<String> new_kept_sourceCodeLevel) {
 		/////////////////////////////////////////////////////////////
 //		Collections.sort(old_visited, new TraceNodePairOrderComparator(oldSlicer4J, oldSlicer4JBytecodeMapping));
 //		Collections.sort(new_visited, new TraceNodePairOrderComparator(newSlicer4J, newSlicer4JBytecodeMapping));
+		System.out.println(old_visited.size());
+		System.out.println(new_visited.size());
 		///////////////////// extract blocks for old/////////////////////
 		HashMap<TraceNode, Integer> oldBlocks = new HashMap<>();
 		Integer BlockID = 0;
@@ -1398,16 +1402,22 @@ public class dualSlicingWithConfigS {
 				} else {
 					if (!old_retained.contains(step))
 						old_retained.add(step);
-					if (!old_kept.contains(step))
+					if (!old_kept.contains(step)) {
 						old_kept.add(step);
+						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping)))
+							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping));
+					}
 				}
 				List<Pair<TraceNode, String>> data_deps = old_data_map.get(step);
 				if (data_deps != null)
 					for (Pair<TraceNode, String> pair : data_deps)
 						if (old_visited.contains(pair.first()))
 							if (oldBlocks.get(pair.first()) != oldBlocks.get(step))// keep the dep
-								if (!old_kept.contains(pair.first()))
+								if (!old_kept.contains(pair.first())) {
 									old_kept.add(pair.first());
+									if (!old_kept_sourceCodeLevel.contains(getSourceCode(pair.first(),false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping)))
+										old_kept_sourceCodeLevel.add(getSourceCode(pair.first(),false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping));
+								}
 
 //				List<TraceNode> ctl_deps = old_ctl_map.get(step);
 //				if(ctl_deps!=null) 
@@ -1444,16 +1454,22 @@ public class dualSlicingWithConfigS {
 				} else {
 					if (!new_retained.contains(step))
 						new_retained.add(step);
-					if (!new_kept.contains(step))
+					if (!new_kept.contains(step)) {
 						new_kept.add(step);
+						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher, newSlicer4J, newSlicer4JBytecodeMapping)))
+							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher, newSlicer4J, newSlicer4JBytecodeMapping));
+					}
 				}
 				List<Pair<TraceNode, String>> data_deps = new_data_map.get(step);
 				if (data_deps != null)
 					for (Pair<TraceNode, String> pair : data_deps)
 						if (new_visited.contains(pair.first()))
 							if (newBlocks.get(pair.first()) != newBlocks.get(step))// keep the dep
-								if (!new_kept.contains(pair.first()))
+								if (!new_kept.contains(pair.first())) {
 									new_kept.add(pair.first());
+									if (!new_kept_sourceCodeLevel.contains(getSourceCode(pair.first(),true,matcher, newSlicer4J, newSlicer4JBytecodeMapping)))
+										new_kept_sourceCodeLevel.add(getSourceCode(pair.first(),true,matcher, newSlicer4J, newSlicer4JBytecodeMapping));
+								}
 
 //				List<TraceNode> ctl_deps = new_ctl_map.get(step);
 //				if(ctl_deps!=null) 
@@ -1470,6 +1486,8 @@ public class dualSlicingWithConfigS {
 				if (positions !=null && positions.size()!=0) {
 					if(!old_kept.contains(n)) {
 						old_kept.add(n);
+						if (!old_kept_sourceCodeLevel.contains(getSourceCode(n,false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping)))
+							old_kept_sourceCodeLevel.add(getSourceCode(n,false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping));					
 					}
 				}
 			}
@@ -1478,16 +1496,24 @@ public class dualSlicingWithConfigS {
 				if (positions !=null && positions.size()!=0) {
 					if(!new_kept.contains(n)) {
 						new_kept.add(n);
+						if (!new_kept_sourceCodeLevel.contains(getSourceCode(n,true,matcher, newSlicer4J, newSlicer4JBytecodeMapping)))
+							new_kept_sourceCodeLevel.add(getSourceCode(n,true,matcher, newSlicer4J, newSlicer4JBytecodeMapping));
+					
 					}
 				}
 			}
 			if (old_kept.size()==0) {				
 			    old_kept.add(old_visited.get(old_visited.size()-1));
+			    if (!old_kept_sourceCodeLevel.contains(getSourceCode(old_visited.get(old_visited.size()-1),false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping)))
+					old_kept_sourceCodeLevel.add(getSourceCode(old_visited.get(old_visited.size()-1),false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping));					
+			
 //			    if(!old_retained.contains(old_visited.get(old_visited.size()-1)))
 //			    	old_retained.add(old_visited.get(old_visited.size()-1));
 			}
 			if (new_kept.size()==0) {		
 			    new_kept.add(new_visited.get(new_visited.size()-1));
+				if (!new_kept_sourceCodeLevel.contains(getSourceCode(new_visited.get(new_visited.size()-1),true,matcher, newSlicer4J, newSlicer4JBytecodeMapping)))
+					new_kept_sourceCodeLevel.add(getSourceCode(new_visited.get(new_visited.size()-1),true,matcher, newSlicer4J, newSlicer4JBytecodeMapping));
 //			    if(!new_retained.contains(new_visited.get(new_visited.size()-1)))
 //			    	new_retained.add(new_visited.get(new_visited.size()-1));
 			}
@@ -2518,7 +2544,7 @@ public class dualSlicingWithConfigS {
 			int traceTime, int dualTime, int InPreSSTime, HashMap<Integer, Integer> oldChangeChunkInfo, HashMap<Integer, Integer> newChangeChunkInfo, 
 			HashMap<Integer, Integer> oldTestCaseChunkInfo, HashMap<Integer, Integer> newTestCaseChunkInfo, 
 			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
-			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual) throws IOException {
+			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual, List<String> old_kept_sourceCodeLevel, List<String> new_kept_sourceCodeLevel) throws IOException {
 		  
 			Path path = Paths.get(basePath+"/results");
 			if(!Files.exists(path)) 
@@ -2821,6 +2847,9 @@ public class dualSlicingWithConfigS {
 		    		String.valueOf(newCtlBlockNodes.keySet().size()),String.valueOf(newCTLDualAvg),String.valueOf(newCTLDualMax), String.valueOf(reducNewCTL),};
 		       WriteToExcel(results,detailedDataRQ2,"RQ2",true,false);
 			
+//			System.out.println("##############Source code statement##############");
+//			System.out.println(old_kept_sourceCodeLevel.size());
+//			System.out.println(new_kept_sourceCodeLevel.size());
 			System.out.println("##############Finish##############");
 						
 	}	

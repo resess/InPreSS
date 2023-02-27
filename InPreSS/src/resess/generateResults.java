@@ -71,7 +71,7 @@ public class generateResults {
 			boolean isReuse, boolean allowMultiThread, 
 			TestCase tc, Defects4jProjectConfig config, boolean requireVisualization, 
 			boolean isRunInTestCaseMode, boolean useSliceBreaker, boolean enableRandom, int breakLimit, List<String> includedClassNames, 
-			List<String> excludedClassNames, String eraseorDual,boolean debug) throws SimulationFailException, IOException {
+			List<String> excludedClassNames, String eraseorDual,boolean debug) throws Exception {
 		TraceCollector0 newCollector = new TraceCollector0(true);
 		TraceCollector0 oldCollector = new TraceCollector0(false);
 
@@ -79,7 +79,8 @@ public class generateResults {
 		RunningResult newRS = null;
 		RunningResult oldRs = null;
 
-		DiffMatcher diffMatcher = null;
+//		DiffMatcher diffMatcher = null;
+		ChangeExtractor diffMatcher = null;
 		PairList PairList = null;
 
 		Long new_trace_start_time = System.currentTimeMillis();
@@ -144,7 +145,9 @@ public class generateResults {
 			System.out.println("#################################");
 			long code_match_start_time = System.currentTimeMillis();
 			System.out.println("Code Alignement");
-			diffMatcher = new DiffMatcher(config.srcSourceFolder, config.srcTestFolder, buggyPath, fixPath);
+//			diffMatcher = new DiffMatcher(config.srcSourceFolder, config.srcTestFolder, buggyPath, fixPath);			
+//			diffMatcher.matchCode();
+			diffMatcher =  new ChangeExtractor(config.srcSourceFolder, config.srcTestFolder, buggyPath, fixPath);
 			diffMatcher.matchCode();
 			long code_match_finish_time = System.currentTimeMillis();
 			codeTime = (int) (code_match_finish_time - code_match_start_time);

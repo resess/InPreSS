@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -366,8 +367,7 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 			if(!Files.exists(path)) {
 				new File(proPath+"/results").mkdirs();
 				new File(proPath+"/results/new").mkdirs();
-				new File(proPath+"/results/old").mkdirs();
-				
+				new File(proPath+"/results/old").mkdirs();				
 
 			}
 			Path Slicer4JResultsPath = Paths.get(proPath+"/results/new/Slicer4JResults");
@@ -406,32 +406,40 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 				
 				
 				//1. copy the test classes
-		        String cmd = "cp -R " + buggyPath + testFolder + "/ " + buggyPath + classFolder + "/";	        
+				File source = new File(buggyPath + testFolder);
+				File dest = new File(buggyPath + classFolder);
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+//		        String cmd = "cp -R " + buggyPath + testFolder + "/* " + buggyPath + classFolder + "/";	  
+//		        System.out.println(cmd);
+//				Process p1 = Runtime.getRuntime().exec(cmd);
+//				BufferedReader in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+//				BufferedReader err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
+//				String line1 = null;
+//				String answer = in.readLine();
+//				if(answer == null){
+//					String error = err.readLine();
+//					if (error != null)
+//						System.out.println(error);
+//				}
+//				else 
+//					while ((line1 = in.readLine()) != null) {
+//						System.out.println(line1);
+//					}	
+//				in.close();
+//				err.close();
+//				p1.waitFor();
+  
+//				//2. create a jar 
+				String cmd = "jar cvf " + proPath + "/results/new/program.jar" + " -C " + buggyPath + classFolder + " .";
 				Process p1 = Runtime.getRuntime().exec(cmd);
 				BufferedReader in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
 				BufferedReader err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
 				String line1 = null;
 				String answer = in.readLine();
-				if(answer == null){
-					String error = err.readLine();
-					if (error != null)
-						System.out.println(error);
-				}
-//				else 
-//					while ((line1 = in.readLine()) != null) {
-//						System.out.println(line1);
-//					}				
-				in.close();
-				err.close();
-				p1.waitFor();
-  
-//				//2. create a jar 
-				cmd = "jar cvf " + proPath + "/results/new/program.jar" + " -C " + buggyPath + classFolder + " .";
-				p1 = Runtime.getRuntime().exec(cmd);
-				in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-				err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
-				line1 = null;
-				answer = in.readLine();
 				if(answer == null){
 					String error = err.readLine();
 					if (error != null)
@@ -450,6 +458,7 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 //		        //3. slice 
 //		        String slicerPath = System.getProperty("user.dir")+"/deps/Slicer4J/scripts/slicer4j.py";
 				String slicerPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4j.py";
+//				String slicerPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4j.py";//thanos
 //		        String slicerPath = "/Users/sahar1/Documents/Projects/LibraryUpadate/Code/Tools/Slicer4J/scripts/slicer4j.py";
 		        cmd = "python3 " + slicerPath +" -j " + proPath + "/results/new/program.jar" + " -o " + proPath + "/results/new/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
 		        System.out.println(cmd);
@@ -480,24 +489,31 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 //		        		        
 		        /////////// /////////// /////////// /////////// /////////// /////////// ///////////
 				//1. copy the test classes
-		         cmd = "cp -R " + fixPath + testFolder + "/ " + fixPath + classFolder + "/";	        
-				 p1 = Runtime.getRuntime().exec(cmd);
-				 in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-				 err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
-				 line1 = null;
-				 answer = in.readLine();
-				if(answer == null){
-					String error = err.readLine();
-					if (error != null)
-						System.out.println(error);
+				source = new File(fixPath + testFolder);
+				dest = new File(fixPath + classFolder);
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
 				}
+//		         cmd = "cp -R " + fixPath + testFolder + "/* " + fixPath + classFolder + "/";	        
+//				 p1 = Runtime.getRuntime().exec(cmd);
+//				 in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+//				 err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
+//				 line1 = null;
+//				 answer = in.readLine();
+//				if(answer == null){
+//					String error = err.readLine();
+//					if (error != null)
+//						System.out.println(error);
+//				}
 //				else 
 //					while ((line1 = in.readLine()) != null) {
 //						System.out.println(line1);
 //					}				
-				in.close();
-				err.close();
-				p1.waitFor();
+//				in.close();
+//				err.close();
+//				p1.waitFor();
   
 //				//2. create a jar 
 				cmd = "jar cvf " + proPath + "/results/old/program.jar" + " -C " + fixPath + classFolder + " .";

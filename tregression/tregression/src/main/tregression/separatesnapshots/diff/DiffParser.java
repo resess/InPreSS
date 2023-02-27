@@ -2,13 +2,25 @@ package tregression.separatesnapshots.diff;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.github.gumtreediff.actions.ActionGenerator;
+import com.github.gumtreediff.matchers.MappingStore;
+import com.github.gumtreediff.matchers.Matcher;
+import com.github.gumtreediff.matchers.Matchers;
+import com.github.gumtreediff.tree.ITree;
+import com.github.gumtreediff.tree.TreeContext;
+
 
 public class DiffParser {
 	public List<FilePairWithDiff> parseDiff(List<String> diffContent, String sourceFolderName){
 		List<FilePairWithDiff> fileDiffList = new ArrayList<>();
 		FilePairWithDiff fileDiff = null;
-		
+		String sourceFile;
+		String targetFile;
 		for(String line: diffContent){
 			if(line.startsWith("diff")){
 				if(fileDiff != null){
@@ -19,7 +31,7 @@ public class DiffParser {
 			}
 			else if(line.startsWith("---")){
 				String osName = System.getProperty("os.name");
-				String sourceFile;
+				
 				if(osName.contains("Win")){
 					sourceFile = line.substring(line.indexOf("a/")+2, line.length()-1);
 				}
@@ -32,7 +44,7 @@ public class DiffParser {
 			}
 			else if(line.startsWith("+++")){
 				String osName = System.getProperty("os.name");
-				String targetFile;
+		
 				if(osName.contains("Win")){
 					targetFile = line.substring(line.indexOf("b/")+2, line.length()-1);
 				}
@@ -57,7 +69,7 @@ public class DiffParser {
 				
 				String lengthInTarget = chunkInfo.substring(chunkInfo.lastIndexOf(",")+1, chunkInfo.length());
 				int lengthInT = Integer.valueOf(lengthInTarget);
-				
+
 				DiffChunk chunk = new DiffChunk(startLineInS, lengthInS, startLinInT, lengthInT);
 				fileDiff.getChunks().add(chunk);
 			}
@@ -89,4 +101,5 @@ public class DiffParser {
 		
 		return -1;
 	}
+
 }

@@ -1,4 +1,4 @@
-package tregression.separatesnapshots;
+package resess;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -21,17 +21,25 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.Statement;
 
+import com.github.gumtreediff.actions.ActionGenerator;
+import com.github.gumtreediff.matchers.MappingStore;
+import com.github.gumtreediff.matchers.Matcher;
+import com.github.gumtreediff.matchers.Matchers;
+import com.github.gumtreediff.tree.ITree;
+import com.github.gumtreediff.tree.TreeContext;
+
 import microbat.model.BreakPoint;
 import microbat.model.ClassLocation;
 import microbat.util.JavaUtil;
 import microbat.util.MinimumASTNodeFinder;
 import tregression.StepChangeType;
+import tregression.separatesnapshots.DiffMatcher;
 import tregression.separatesnapshots.diff.DiffChunk;
 import tregression.separatesnapshots.diff.DiffParser;
 import tregression.separatesnapshots.diff.FilePairWithDiff;
 import tregression.separatesnapshots.diff.LineChange;
 
-public class DiffMatcher {
+public class ChangeExtractor extends DiffMatcher{
 	
 	private String sourceFolderName;
 	private String testFolderName;
@@ -41,8 +49,8 @@ public class DiffMatcher {
 	
 	protected List<FilePairWithDiff> fileDiffList;
 	
-	public DiffMatcher(String sourceFolderName, String testFolderName, String buggyPath, String fixPath) {
-		super();
+	public ChangeExtractor(String sourceFolderName, String testFolderName, String buggyPath, String fixPath) {
+		super(sourceFolderName,testFolderName,buggyPath,fixPath);
 		this.sourceFolderName = sourceFolderName;
 		this.testFolderName = testFolderName;
 		this.buggyPath = buggyPath;
@@ -283,13 +291,13 @@ public class DiffMatcher {
 		//List<String> diffContent = getRawDiffContent();
 		List<String> diffContent = getRawDiffContent(sourceFolderName);
 		diffContent.add("diff end");
-		List<FilePairWithDiff> fileDiffs = new DiffParser().parseDiff(diffContent, sourceFolderName);
-
+//		List<FilePairWithDiff> fileDiffs = new DiffParser().parseDiff(diffContent, sourceFolderName);
+		List<FilePairWithDiff> fileDiffs = parseDiff(diffContent, sourceFolderName);
 		
 		List<String> testDiffContent = getRawDiffContent(testFolderName);
  		testDiffContent.add("diff end");
- 		List<FilePairWithDiff> testFileDiffs = new DiffParser().parseDiff(testDiffContent, testFolderName);
-
+// 		List<FilePairWithDiff> testFileDiffs = new DiffParser().parseDiff(testDiffContent, testFolderName);
+ 		List<FilePairWithDiff> testFileDiffs = parseDiff(testDiffContent, testFolderName);
  		fileDiffs.addAll(testFileDiffs);
  		
  		Iterator<FilePairWithDiff> iter = fileDiffs.iterator();
@@ -553,5 +561,129 @@ public class DiffMatcher {
 	public List<FilePairWithDiff> getFileDiffList() {
 		return fileDiffList;
 	}
+	public List<FilePairWithDiff> parseDiff(List<String> diffContent, String sourceFolderName){
+		List<FilePairWithDiff> fileDiffList = new ArrayList<>();
+		FilePairWithDiff fileDiff = null;
+		String sourceFile = null;
+		String targetFile = null;
+		for(String line: diffContent){
+			if(line.startsWith("diff")){
+				if(fileDiff != null){
+					fileDiffList.add(fileDiff);
+				}
+				fileDiff = new FilePairWithDiff();
+				fileDiff.setSourceFolderName(sourceFolderName);
+			}
+			else if(line.startsWith("---")){
+				String osName = System.getProperty("os.name");
+				
+				if(osName.contains("Win")){
+					sourceFile = line.substring(line.indexOf("a/")+2, line.length()-1);
+				}
+				else{
+					sourceFile = line.substring(line.indexOf("a/")+1, line.length());
+				}
+				sourceFile = sourceFile.replace("/", File.separator);
+				sourceFile = sourceFile.replace("\\\\", File.separator);
+				fileDiff.setSourceFile(sourceFile);
+			}
+			else if(line.startsWith("+++")){
+				String osName = System.getProperty("os.name");
+		
+				if(osName.contains("Win")){
+					targetFile = line.substring(line.indexOf("b/")+2, line.length()-1);
+				}
+				else{
+					targetFile = line.substring(line.indexOf("b/")+1, line.length());
+				}
+				targetFile = targetFile.replace("/", File.separator);
+				targetFile = targetFile.replace("\\\\", File.separator);
+				fileDiff.setTargetFile(targetFile);
+			}
+			else if(line.startsWith("@@")){
+				String chunkInfo = line.substring(line.indexOf("@@")+3, line.lastIndexOf("@@")-1);
+				
+				String startLineInSource = chunkInfo.substring(chunkInfo.indexOf("-")+1, chunkInfo.indexOf(","));
+				int startLineInS = Integer.valueOf(startLineInSource);
+				
+				String lengthInSource = chunkInfo.substring(chunkInfo.indexOf(",")+1, chunkInfo.indexOf(" "));
+				int lengthInS = Integer.valueOf(lengthInSource);
+				
+				String startLineInTarget = chunkInfo.substring(chunkInfo.indexOf(" ")+2, chunkInfo.lastIndexOf(","));
+				int startLinInT = Integer.valueOf(startLineInTarget);
+				
+				String lengthInTarget = chunkInfo.substring(chunkInfo.lastIndexOf(",")+1, chunkInfo.length());
+				int lengthInT = Integer.valueOf(lengthInTarget);
+				
+				
+//				if(!sourceFile.contains("/dev/null") && !targetFile.contains("/dev/null")) {
+//					Map<Integer, String[]> changes = null;	
+//					try {					
+//						changes = obtainMapChanges(sourceFile,targetFile);
+//					} catch (Exception e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//					Set<Integer> keySet = changes.keySet();
+//					ArrayList<Integer> result = new ArrayList<Integer>(keySet);				
+//					Collections.sort(result);
+//					
+//					DiffChunk chunk = new DiffChunk(startLineInS, lengthInS, startLinInT, lengthInT,result);
+//					fileDiff.getChunks().add(chunk);
+//				}
+//				else {
+					DiffChunk chunk = new DiffChunk(startLineInS, lengthInS, startLinInT, lengthInT);
+					fileDiff.getChunks().add(chunk);
+//				}
+			}
+			else if(line.startsWith(" ") || line.startsWith("+") || line.startsWith("-")){
+				int size = fileDiff.getChunks().size();
+				DiffChunk chunk = fileDiff.getChunks().get(size-1);
+				
+				int index = chunk.getChangeList().size();
+				int type = changeType(line.toCharArray()[0]);
+				
+				LineChange change = new LineChange(index, type, line);
+				chunk.getChangeList().add(change);
+			}
+		}
+		
+		return fileDiffList;
+	}
 	
+	private int changeType(char s){
+		if(s==' '){
+			return LineChange.UNCHANGE;
+		}
+		else if(s=='+'){
+			return LineChange.ADD;
+		}
+		else if(s=='-'){
+			return LineChange.REMOVE;
+		}
+		
+		return -1;
+	}
+
+
+
+	private Map<Integer, String[]> obtainMapChanges(String sourceFile, String targetFile) throws Exception {
+		TreeContext srctxt= new CustomJdtTreeGenerator().generateFromFile(sourceFile);
+		TreeContext dsttxt=new CustomJdtTreeGenerator().generateFromFile(targetFile);
+		ITree src=srctxt.getRoot();
+		ITree dst = dsttxt.getRoot();
+		Matcher m = Matchers.getInstance().getMatcher(src, dst);
+		m.match();
+		MappingStore mappings=m.getMappings();
+		ActionGenerator g = new ActionGenerator(src, dst, mappings);
+		g.generate();
+		Map<Integer,String[]>  changes= new CustomSerializer(srctxt,dsttxt,g.getActions(),mappings).getChanes();
+//		for(Integer key: changes.keySet()) {
+//			System.out.println("key:" + key);
+//			for(int kk=0;kk<changes.get(key).length;kk++)
+//			System.out.println("changes:" + changes.get(key)[kk]);
+//		}
+			
+		return changes;
+	}
 }
