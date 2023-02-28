@@ -402,9 +402,9 @@ public class dualSlicingWithConfigE {
 						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
 						oldCommonChunkInfo, newCommonChunkInfo,
 						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
-				PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+//				PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+//						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+//						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
 			}		
 			else 
 				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
@@ -2562,7 +2562,7 @@ public class dualSlicingWithConfigE {
 			if (!tempFile.exists()) {
 		        FirstTime=true;
 		        XSSFWorkbook workbook = new XSSFWorkbook();
-		        XSSFSheet sheet = workbook.createSheet("stats");
+		        XSSFSheet sheet = workbook.createSheet("Table II + RQ1");
 		        try {
 		        	FileOutputStream outputStream = new FileOutputStream(results);
 		            workbook.write(outputStream);
@@ -2574,18 +2574,18 @@ public class dualSlicingWithConfigE {
 	
             if (FirstTime) {		    	
 		        String[] header = {"Bug ID", 
-		        		"Old trace size (#T)","Old Dual size(#DSlice)", "%Old Reduction", "#Chg", "Old InPreSS size(#InPreSS)", "%Old InPreSS Reduction","Old InPreSS size(Source Code leve)",
-		        		"New trace size (#T)","New Dual size(#DSlice)", "%New Reduction", "#Chg", "New InPreSS size(#InPreSS)", "%New InPreSS Reduction","New InPreSS size(Source Code leve)",
+		        		"Old trace size (#T)","Old Dual size(#DSlice)", "%Old Reduction", "#Old Chg", "Old InPreSS size(#InPreSS)", "%Old InPreSS Reduction","Old InPreSS size(Source Code leve)",
+		        		"New trace size (#T)","New Dual size(#DSlice)", "%New Reduction", "#New Chg", "New InPreSS size(#InPreSS)", "%New InPreSS Reduction","New InPreSS size(Source Code leve)",
 		        		"DSlice Time (Min)", "InPreSS Time (Min)"
 		        		};
-		        WriteToExcel(results, header, "stats",false, true);
+		        WriteToExcel(results, header, "Table II + RQ1",false, true);
 		    }
 		    String[] data = {bugID, 
 		    		String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(old_visited.size()), String.valueOf(oldReduction), String.valueOf(oldChangeChunkInfo.keySet().size()), String.valueOf(old_kept.size()), String.valueOf(InPreSSoldReduction), String.valueOf(old_kept_sourceCodeLevel.size()),
 		    		String.valueOf(newTrace.getExecutionList().size()), String.valueOf(new_visited.size()), String.valueOf(newReduction), String.valueOf(newChangeChunkInfo.keySet().size()), String.valueOf(new_kept.size()), String.valueOf(InPreSSnewReduction), String.valueOf(new_kept_sourceCodeLevel.size()),
 		    		String.valueOf((Double.valueOf(dualTime)/1000.0)/60.0), String.valueOf((Double.valueOf(InPreSSTime)/1000.0)/60.0)
 		    		};
-		    WriteToExcel(results,data,"stats",false, false);
+		    WriteToExcel(results,data,"Table II + RQ1",false, false);
 						
 	
 		    /////////////////#######////#######////#######////#######////#######////#######
@@ -2594,12 +2594,12 @@ public class dualSlicingWithConfigE {
 		    
 		    if (FirstTime) {		    	
 		        String[] header = {"Bug ID", 
-		        		"# Old mathched block", "Avg.", "Max", "%Reduction", 
-		        		"# Old unmathched block", "Avg.", "Max", "%Reduction", 
-		        		"# New mathched block", "Avg.", "Max", "%Reduction", 
-		        		"# New unmathched block", "Avg.", "Max", "%Reduction", 
+		        		"# Old mathched block", "Old Match Avg.", "Old Match Max", "%Old Match Reduction", 
+		        		"# Old unmathched block", "Old UnMatch Avg.", "Old UnMatch Max", "%Old UnMatch Reduction", 
+		        		"# New mathched block", "New Match Avg.", "New Match Max", "%New Match Reduction", 
+		        		"# New unmathched block", "New UnMatch Avg.", "New UnMatch Max", "%New UnMatch Reduction", 
 		        		};
-		        WriteToExcel(results, header, "detailed",true,true);
+		        WriteToExcel(results, header, "RQ2",true,true);
 		    }
 		       
 		 		       
@@ -2823,7 +2823,7 @@ public class dualSlicingWithConfigE {
 		    		String.valueOf(oldCtlBlockNodes.keySet().size()), String.valueOf(oldCTLDualAvg),String.valueOf(oldCTLDualMax) ,String.valueOf(reducOldCTL),
 		    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(newDATDualAvg),String.valueOf(newDATDualMax) ,String.valueOf(reducNewData),
 		    		String.valueOf(newCtlBlockNodes.keySet().size()),String.valueOf(newCTLDualAvg),String.valueOf(newCTLDualMax), String.valueOf(reducNewCTL),};
-		       WriteToExcel(results,detailedDataRQ2,"detailed",true,false);
+		       WriteToExcel(results,detailedDataRQ2,"RQ2",true,false);
 		    
 			
 			System.out.println("##############Finish##############");
