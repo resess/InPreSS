@@ -356,16 +356,324 @@ public class dualSlicingWithConfigS {
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
 				oldCommonChunkInfo, newCommonChunkInfo,
 				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
-		else
-			PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+		else {
+			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
+				PrintD4JPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+						oldCommonChunkInfo, newCommonChunkInfo,
+						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
+			}
+			else
+				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
 				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
 				oldCommonChunkInfo, newCommonChunkInfo,
 				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
+			}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////s
+
+	private void PrintD4JPaperResults(TestCase tc, String basePath, String projectName, String bugID, Trace newTrace,
+			Trace oldTrace, List<TraceNode> new_visited, List<TraceNode> old_visited, List<TraceNode> new_kept,
+			List<TraceNode> old_kept, List<TraceNode> new_retained, List<TraceNode> old_retained,
+			HashMap<Integer, List<TraceNode>> newDataBlockNodes, HashMap<Integer, List<TraceNode>> oldDataBlockNodes,
+			HashMap<Integer, List<TraceNode>> newCtlBlockNodes, HashMap<Integer, List<TraceNode>> oldCtlBlockNodes,
+			int oldTraceTime, int newTraceTime, int codeTime, int traceTime, int dual_Time, int inPreSS_Time,
+			HashMap<Integer, Integer> oldChangeChunkInfo, HashMap<Integer, Integer> newChangeChunkInfo,
+			HashMap<Integer, Integer> oldTestCaseChunkInfo, HashMap<Integer, Integer> newTestCaseChunkInfo,
+			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
+			int oldRetainedTestRemovedByDual, int newRetainedTestRemovedByDual, List<String> old_kept_sourceCodeLevel,
+			List<String> new_kept_sourceCodeLevel) {
+		Path path = Paths.get(basePath+"/results");
+		if(!Files.exists(path)) 
+			new File(basePath+"/results").mkdirs();
+		
+		String results = basePath+"/results/"+projectName+".xlsx";
+	    File tempFile = new File(results);
+	    boolean FirstTime = false;
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+		double oldReduction = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(old_visited.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
+		double newReduction = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(new_visited.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
+	    double InPreSSoldReduction = (Double.valueOf(old_visited.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(old_visited.size()))*100.0;
+	    double InPreSSnewReduction = (Double.valueOf(new_visited.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(new_visited.size()))*100.0;
+		
+		if (!tempFile.exists()) {
+	        FirstTime=true;
+	        XSSFWorkbook workbook = new XSSFWorkbook();
+	        XSSFSheet sheet = workbook.createSheet("stats");
+	        try {
+	        	FileOutputStream outputStream = new FileOutputStream(results);
+	            workbook.write(outputStream);
+	            workbook.close();
+	        	outputStream.close();
+	        } catch (Exception e) {
+	        }
+	    }		
+
+        if (FirstTime) {		    	
+	        String[] header = {"Bug ID", 
+	        		"Old trace size (#T)","Old Dual size(#DSlice)", "%Old Reduction", "#Chg", "Old InPreSS size(#InPreSS)", "%Old InPreSS Reduction","Old InPreSS size(Source Code leve)",
+	        		"New trace size (#T)","New Dual size(#DSlice)", "%New Reduction", "#Chg", "New InPreSS size(#InPreSS)", "%New InPreSS Reduction","New InPreSS size(Source Code leve)",
+	        		"DSlice Time (Min)", "InPreSS Time (Min)"
+	        		};
+	        WriteToExcel(results, header, "stats",false, true);
+	    }
+	    String[] data = {bugID, 
+	    		String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(old_visited.size()), String.valueOf(oldReduction), String.valueOf(oldChangeChunkInfo.keySet().size()), String.valueOf(old_kept.size()), String.valueOf(InPreSSoldReduction), String.valueOf(old_kept_sourceCodeLevel.size()),
+	    		String.valueOf(newTrace.getExecutionList().size()), String.valueOf(new_visited.size()), String.valueOf(newReduction), String.valueOf(newChangeChunkInfo.keySet().size()), String.valueOf(new_kept.size()), String.valueOf(InPreSSnewReduction), String.valueOf(new_kept_sourceCodeLevel.size()),
+	    		String.valueOf((Double.valueOf(dual_Time)/1000.0)/60.0), String.valueOf((Double.valueOf(inPreSS_Time)/1000.0)/60.0)
+	    		};
+	    WriteToExcel(results,data,"stats",false, false);
+					
+
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+
+	    
+	    if (FirstTime) {		    	
+	        String[] header = {"Bug ID", 
+	        		"# Old mathched block", "Avg.", "Max", "%Reduction", 
+	        		"# Old unmathched block", "Avg.", "Max", "%Reduction", 
+	        		"# New mathched block", "Avg.", "Max", "%Reduction", 
+	        		"# New unmathched block", "Avg.", "Max", "%Reduction", 
+	        		};
+	        WriteToExcel(results, header, "detailed",true,true);
+	    }
+	       
+	 		       
+	    double sum = 0.0;
+	    for(Integer loc:oldChangeChunkInfo.keySet()) {
+	    	sum += oldChangeChunkInfo.get(loc);
+	    }
+	    double avg = sum/(double)oldChangeChunkInfo.keySet().size();
+	    double oldLocation = avg/(double)oldTrace.getExecutionList().size();
+	    int oldChangedStamts = getChanges(old_retained, tc);
+	    
+	    sum = 0.0;
+	    for(Integer loc:newChangeChunkInfo.keySet()) {
+	    	sum += newChangeChunkInfo.get(loc);
+	    }
+	    avg = sum/(double)newChangeChunkInfo.keySet().size();
+	    double newLocation = avg/(double)newTrace.getExecutionList().size();
+	    int newChangedStamts = getChanges(new_retained, tc);
+	    
+	    double oldCommonBlockAvg = 0.0;
+	    double oldCommonBlockMax = -1000000.0;
+	    double oldCommonBlockMin = 100000.0;
+	    double oldCommonBlockSum = 0.0;
+		for (Integer blockID :oldCommonChunkInfo.keySet()) {
+			Integer noOfStmts = oldCommonChunkInfo.get(blockID);
+			if(noOfStmts!=null) {
+				oldCommonBlockSum = oldCommonBlockSum + noOfStmts;
+				if (oldCommonBlockMax<noOfStmts)
+					oldCommonBlockMax = noOfStmts;
+				if (oldCommonBlockMin>noOfStmts)
+					oldCommonBlockMin = noOfStmts;
+			}			
+		}
+		oldCommonBlockAvg = oldCommonBlockSum/oldCommonChunkInfo.keySet().size();
+
+		
+	    double newCommonBlockAvg = 0.0;
+	    double newCommonBlockMax = -1000000.0;
+	    double newCommonBlockMin = 100000.0;
+	    double newCommonBlockSum = 0.0;
+		for (Integer blockID :newCommonChunkInfo.keySet()) {
+			Integer noOfStmts = newCommonChunkInfo.get(blockID);
+			if(noOfStmts!=null) {
+				newCommonBlockSum = newCommonBlockSum + noOfStmts;
+				if (newCommonBlockMax<noOfStmts)
+					newCommonBlockMax = noOfStmts;
+				if (newCommonBlockMin>noOfStmts)
+					newCommonBlockMin = noOfStmts;
+			}			
+		}
+		newCommonBlockAvg = newCommonBlockSum/newCommonChunkInfo.keySet().size();
+
+		
+	    	
+		//calculating #B, avg, max of data blocks on dual slice
+	    double oldDATDualAvg = 0.0;
+	    double oldDATDualMax = -1000000.0;
+	    double oldDATDualMin = 100000.0;
+	    double oldDATDualSum = 0.0;
+		for (Integer block :oldDataBlockNodes.keySet()) {
+			List<TraceNode> nodes = oldDataBlockNodes.get(block);
+			if(nodes!=null) {
+				oldDATDualSum = oldDATDualSum + nodes.size();
+				if (oldDATDualMax<nodes.size())
+					oldDATDualMax = nodes.size();
+				if (oldDATDualMin>nodes.size())
+					oldDATDualMin = nodes.size();
+			}			
+		}
+		oldDATDualAvg = oldDATDualSum/oldDataBlockNodes.keySet().size();
+
+		
+		double newDATDualAvg = 0.0;
+	    double newDATDualMax = -100000.0;
+	    double newDATDualMin = 100000.0;
+	    double newDATDualSum = 0.0;
+		for (Integer block :newDataBlockNodes.keySet()) {
+			List<TraceNode> nodes = newDataBlockNodes.get(block);
+			if(nodes!=null) {
+				newDATDualSum = newDATDualSum + nodes.size();
+				if (newDATDualMax<nodes.size())
+					newDATDualMax = nodes.size();
+				if (newDATDualMin>nodes.size())
+					newDATDualMin = nodes.size();
+			}			
+		}
+		newDATDualAvg = newDATDualSum/newDataBlockNodes.keySet().size();
+
+		
+		//calculating #B, avg, max of data blocks on dual slice
+		double oldDATInPreSSAvg = 0.0;
+		double oldDATInPreSSMax = -100000.0;
+		double oldDATInPreSSMin = 100000.0;
+		double oldDATInPreSSSum = 0.0;
+		for (Integer block :oldDataBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldDataBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (old_kept.contains(node))
+						size = size + 1;
+				}
+				oldDATInPreSSSum = oldDATInPreSSSum + size;
+				if (oldDATInPreSSMax<size)
+					oldDATInPreSSMax = size;
+				if (oldDATInPreSSMin>size)
+					oldDATInPreSSMin = size;
+			}			
+		}
+		oldDATInPreSSAvg = oldDATInPreSSSum/oldDataBlockNodes.keySet().size();
+
+		
+		double newDATInPreSSAvg = 0.0;
+	    double newDATInPreSSMax = -100000.0;
+	    double newDATInPreSSMin = 100000.0;
+	    double newDATInPreSSSum = 0.0;
+		for (Integer block :newDataBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newDataBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (new_kept.contains(node))
+						size = size + 1;
+				}
+				newDATInPreSSSum = newDATInPreSSSum + size;
+				if (newDATInPreSSMax<size)
+					newDATInPreSSMax = size;
+				if (newDATInPreSSMin>size)
+					newDATInPreSSMin = size;
+			}			
+		}
+		newDATInPreSSAvg = newDATInPreSSSum/newDataBlockNodes.keySet().size();
+
+		
+		///////////////////////////////
+		double oldCTLDualAvg = 0.0;
+		double oldCTLDualMax = -1000000.0;
+		double oldCTLDualMin = 100000.0;
+		double oldCTLDualSum = 0.0;
+		for (Integer block :oldCtlBlockNodes.keySet()) {
+			List<TraceNode> nodes = oldCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				oldCTLDualSum = oldCTLDualSum + nodes.size();
+				if (oldCTLDualMax<nodes.size())
+					oldCTLDualMax = nodes.size();
+				if (oldCTLDualMin>nodes.size())
+					oldCTLDualMin = nodes.size();
+			}			
+		}
+		oldCTLDualAvg = oldCTLDualSum/oldCtlBlockNodes.keySet().size();
+
+		
+		double newCTLDualAvg = 0.0;
+		double newCTLDualMax = -100000.0;
+		double newCTLDualMin = 100000.0;
+		double newCTLDualSum = 0.0;
+		for (Integer block :newCtlBlockNodes.keySet()) {
+			List<TraceNode> nodes = newCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				newCTLDualSum = newCTLDualSum + nodes.size();
+				if (newCTLDualMax<nodes.size())
+					newCTLDualMax = nodes.size();
+				if (newCTLDualMin>nodes.size())
+					newCTLDualMin = nodes.size();
+			}			
+		}
+		newCTLDualAvg = newCTLDualSum/newCtlBlockNodes.keySet().size();
+
+		
+		//calculating #B, avg, max of data blocks on dual slice
+		double oldCTLInPreSSAvg = 0.0;
+		double oldCTLInPreSSMax = -100000.0;
+		double oldCTLInPreSSMin = 100000.0;
+		double oldCTLInPreSSSum = 0.0;
+		for (Integer block :oldCtlBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (old_kept.contains(node))
+						size = size + 1;
+				}
+				oldCTLInPreSSSum = oldCTLInPreSSSum + size;
+				if (oldCTLInPreSSMax<size)
+					oldCTLInPreSSMax = size;
+				if (oldCTLInPreSSMin>size)
+					oldCTLInPreSSMin = size;
+			}			
+		}
+		oldCTLInPreSSAvg = oldCTLInPreSSSum/oldCtlBlockNodes.keySet().size();
+
+		
+		double newCTLInPreSSAvg = 0.0;
+	    double newCTLInPreSSMax = -100000.0;
+	    double newCTLInPreSSMin = 100000.0;
+	    double newCTLInPreSSSum = 0.0;
+		for (Integer block :newCtlBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (new_kept.contains(node))
+						size = size + 1;
+				}
+				newCTLInPreSSSum = newCTLInPreSSSum + size;
+				if (newCTLInPreSSMax<size)
+					newCTLInPreSSMax = size;
+				if (newCTLInPreSSMin>size)
+					newCTLInPreSSMin = size;
+			}			
+		}
+		newCTLInPreSSAvg = newCTLInPreSSSum/newCtlBlockNodes.keySet().size();		
+	    
+	    double reducOldData =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldCTLDualSum+oldDATInPreSSSum))/(Double.valueOf(old_visited.size()))*100.0;
+	    double reducOldCTL =  (Double.valueOf(old_visited.size())-(old_retained.size()+oldDATDualSum+oldCTLInPreSSSum))/(Double.valueOf(old_visited.size()))*100.0;
+	    double reducNewData =  (Double.valueOf(new_visited.size())-(new_retained.size()+newCTLDualSum+newDATInPreSSSum))/(Double.valueOf(new_visited.size()))*100.0;
+	    double reducNewCTL =  (Double.valueOf(new_visited.size())-(new_retained.size()+newDATDualSum+newCTLInPreSSSum))/(Double.valueOf(new_visited.size()))*100.0;
+	    
+	    String[] detailedDataRQ2 = {bugID, 
+	    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(oldDATDualAvg),String.valueOf(oldDATDualMax),String.valueOf(reducOldData),
+	    		String.valueOf(oldCtlBlockNodes.keySet().size()), String.valueOf(oldCTLDualAvg),String.valueOf(oldCTLDualMax) ,String.valueOf(reducOldCTL),
+	    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(newDATDualAvg),String.valueOf(newDATDualMax) ,String.valueOf(reducNewData),
+	    		String.valueOf(newCtlBlockNodes.keySet().size()),String.valueOf(newCTLDualAvg),String.valueOf(newCTLDualMax), String.valueOf(reducNewCTL),};
+	       WriteToExcel(results,detailedDataRQ2,"detailed",true,false);
+	    
+		
+		System.out.println("##############Finish##############");
+					
+}	
+		
 
 	private void getCommonBlocksChunks(StepChangeTypeChecker typeChecker, DiffMatcher matcher, TestCase tc, List<TraceNode> old_visited, List<TraceNode> new_visited,
 			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo) {

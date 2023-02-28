@@ -117,6 +117,24 @@ public class projConfig extends Defects4jProjectConfig{
 			}			
 			config = new projConfig("test", "src", "build"+File.separator+"test", "build"+File.separator+"classes", "build", projectName, bugID);
 			config.configFile = ereasOrSlicer;
+			
+            Path path = Paths.get(buggyPath + "build/lib")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "build/lib");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}			
+				source = new File(fixPath + "build/lib");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
 			if(config.configFile.contentEquals("S"))
 				getSlice(baseProjPath, "build"+File.separator+"test","build"+File.separator+"classes", projectName, bugID,"lib");
 		}
@@ -217,6 +235,125 @@ public class projConfig extends Defects4jProjectConfig{
 			}
 		}
 		else if (projectName.equals("Mockito")) {
+			Path path = Paths.get(buggyPath + "build/lib")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "build/lib");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+				source = new File(fixPath + "build/lib");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
+			path = Paths.get(buggyPath + "lib/build")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "lib/build");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+				source = new File(fixPath + "lib/build");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
+			path = Paths.get(buggyPath + "lib/repackaged")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "lib/repackaged");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+				source = new File(fixPath + "lib/repackaged");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
+			path = Paths.get(buggyPath + "lib/sources")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "lib/sources");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+				source = new File(fixPath + "lib/sources");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
+		    path = Paths.get(buggyPath + "lib/test")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "lib/test");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+				source = new File(fixPath + "lib/test");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
+			path = Paths.get(buggyPath + "lib/compile")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "lib/compile");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+				source = new File(fixPath + "lib/compile");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
+			path = Paths.get(buggyPath + "lib/run")	;	
+			if(Files.exists(path)) {
+				File source = new File(buggyPath + "lib/run");
+				File dest = new File(buggyPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+				source = new File(fixPath + "lib/run");
+				dest = new File(fixPath + "lib");
+				try {
+				    FileUtils.copyDirectory(source, dest);
+				} catch (IOException e) {
+				    e.printStackTrace();
+				}
+			}
 			if(bugID<12 || bugID==20 || bugID==21 || bugID==18 || bugID==19){
 				Path newPath = Paths.get(buggyPath+"build"+File.separator+"classes"+File.separator+"main");
 	            Path oldPath = Paths.get(fixPath+"build"+File.separator+"classes"+File.separator+"main");
@@ -226,6 +363,7 @@ public class projConfig extends Defects4jProjectConfig{
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
+				
 				config = new projConfig("test", "src", "build"+File.separator+"classes"+File.separator+"test", "build"+File.separator+"classes"+File.separator+"main", "build", projectName, bugID);	
 				config.configFile = ereasOrSlicer;
 				if(config.configFile.contentEquals("S"))
@@ -359,52 +497,57 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 	////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 	private static void getSlice(String baseProj, String testFolder, String classFolder, String projectName, int bugID, String depPath) throws IOException, InterruptedException {
+			
+//	        String slicerPath = System.getProperty("user.dir")+"/deps/Slicer4J/scripts/slicer4j.py";
+		    String slicerPath = "/Users/sahar1/Documents/Projects/LibraryUpadate/Code/Tools/Slicer4J/scripts/slicer4j.py";
+//		    String slicerPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4j.py";
+			
+//		    String slicerPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4j.py";//thanos
+        /////////// /////////// /////////// /////////// /////////// /////////// ///////////
+			/////////// /////////// /////////// /////////// /////////// /////////// ///////////
 		    String proPath = baseProj + projectName + "/" + bugID;
 			String buggyPath = proPath + "/bug/";
 			String fixPath = proPath + "/fix/";
-			Path path = Paths.get(proPath+"/results");
-			
+			Path path = Paths.get(proPath+"/results");		
 			if(!Files.exists(path)) {
 				new File(proPath+"/results").mkdirs();
 				new File(proPath+"/results/new").mkdirs();
 				new File(proPath+"/results/old").mkdirs();				
 
 			}
-			Path Slicer4JResultsPath = Paths.get(proPath+"/results/new/Slicer4JResults");
-	
-			if(!Files.exists(Slicer4JResultsPath)) {
-				new File(proPath+"/results/old/Slicer4JResults").mkdirs();
-				new File(proPath+"/results/new/Slicer4JResults").mkdirs();
-		        String failingFile = buggyPath  + "failing_tests";
-				File file = new File(failingFile);
-	
-				BufferedReader reader = new BufferedReader(new FileReader(file));
-	
-				String testClass = "";
-				String testMethod = "";
-				String sliceLine = "";
-					
-				String line = null;
-				while ((line = reader.readLine()) != null) {
-					if (line.startsWith("---")) {
-						 testClass = line.substring(line.indexOf(" ") + 1, line.indexOf("::"));
-						 testMethod = line.substring(line.indexOf("::") + 2, line.length());				
-					}
-					else {
-						if (line.contains(testClass) && line.contains(testMethod)) {
-							String temp = (line.split(":")[1]);
-//							System.out.println(temp);
-//							if (temp.contains(")"))
-//								System.out.println(temp.indexOf(")"));
-							sliceLine = temp.substring(0, temp.indexOf(")"));
-//							System.out.println(sliceLine);
-							break;
-						}						    
-					}					
+			new File(proPath+"/results/old/Slicer4JResults").mkdirs();
+			new File(proPath+"/results/new/Slicer4JResults").mkdirs();
+			
+	        String failingFile = buggyPath  + "failing_tests";
+			File file = new File(failingFile);
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+			String testClass = "";
+			String testMethod = "";
+			String sliceLine = "";				
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				if (line.startsWith("---")) {
+					 testClass = line.substring(line.indexOf(" ") + 1, line.indexOf("::"));
+					 testMethod = line.substring(line.indexOf("::") + 2, line.length());				
 				}
-				reader.close();	
-				
-				
+				else {
+					if (line.contains(testClass) && line.contains(testMethod)) {
+						String temp = (line.split(":")[1]);
+//						System.out.println(temp);
+//						if (temp.contains(")"))
+//							System.out.println(temp.indexOf(")"));
+						sliceLine = temp.substring(0, temp.indexOf(")"));
+//						System.out.println(sliceLine);
+						break;
+					}						    
+				}					
+			}
+			reader.close();
+	        /////////// /////////// /////////// /////////// /////////// /////////// ///////////
+			/////////// /////////// /////////// /////////// /////////// /////////// ///////////
+//		    Path Slicer4JResultsPath = Paths.get(proPath+"/results/new/Slicer4JResults");
+	        Path instrumentedJar = Paths.get(proPath+"/results/new/Slicer4JResults/program_i.jar");
+			if(!Files.exists(instrumentedJar)) {
 				//1. copy the test classes
 				File source = new File(buggyPath + testFolder);
 				File dest = new File(buggyPath + classFolder);
@@ -456,10 +599,6 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 				System.out.println("Finish creating jar");
 	        
 //		        //3. slice 
-//		        String slicerPath = System.getProperty("user.dir")+"/deps/Slicer4J/scripts/slicer4j.py";
-				String slicerPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4j.py";
-//				String slicerPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4j.py";//thanos
-//		        String slicerPath = "/Users/sahar1/Documents/Projects/LibraryUpadate/Code/Tools/Slicer4J/scripts/slicer4j.py";
 		        cmd = "python3 " + slicerPath +" -j " + proPath + "/results/new/program.jar" + " -o " + proPath + "/results/new/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
 		        System.out.println(cmd);
        
@@ -486,11 +625,15 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 				int rc = p.waitFor();
 //				System.out.println("Process exitValue: " + rc);
 				System.out.println("Finish creating slice");
-//		        		        
-		        /////////// /////////// /////////// /////////// /////////// /////////// ///////////
+//		        
+			}
+	        /////////// /////////// /////////// /////////// /////////// /////////// ///////////
+			/////////// /////////// /////////// /////////// /////////// /////////// ///////////
+	        instrumentedJar = Paths.get(proPath+"/results/old/Slicer4JResults/program_i.jar");
+			if(!Files.exists(instrumentedJar)) {
 				//1. copy the test classes
-				source = new File(fixPath + testFolder);
-				dest = new File(fixPath + classFolder);
+				File source = new File(fixPath + testFolder);
+				File dest = new File(fixPath + classFolder);
 				try {
 				    FileUtils.copyDirectory(source, dest);
 				} catch (IOException e) {
@@ -516,12 +659,12 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 //				p1.waitFor();
   
 //				//2. create a jar 
-				cmd = "jar cvf " + proPath + "/results/old/program.jar" + " -C " + fixPath + classFolder + " .";
-				p1 = Runtime.getRuntime().exec(cmd);
-				in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-				err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
-				line1 = null;
-				answer = in.readLine();
+				String cmd = "jar cvf " + proPath + "/results/old/program.jar" + " -C " + fixPath + classFolder + " .";
+				Process p1 = Runtime.getRuntime().exec(cmd);
+				BufferedReader in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+				BufferedReader err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
+				String line1 = null;
+				String answer = in.readLine();
 				if(answer == null){
 					String error = err.readLine();
 					if (error != null)
@@ -533,14 +676,16 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 //					}				
 				in.close();
 				err.close();
-				 c = p1.waitFor();
+				int c = p1.waitFor();
 //				System.out.println("Process exitValue: " + c);
 				System.out.println("Finish creating jar");
 	        
 //		        //3. slice 
+				cmd = "python3 " + slicerPath +" -j " + proPath + "/results/old/program.jar" + " -o " + proPath + "/results/old/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
+			        System.out.println(cmd);
 	            String[] commads2 = {"python3", slicerPath, "-j", proPath + "/results/old/program.jar","-o",proPath + "/results/old/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", fixPath + depPath};
 				
-	            p = new ProcessBuilder(commads2)
+	            Process p = new ProcessBuilder(commads2)
 	                    .redirectErrorStream(true)
 	                    .start();
 				in = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -558,12 +703,10 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 					}				
 				in.close();
 				err.close();
-				rc = p.waitFor();
+				int rc = p.waitFor();
 //				System.out.println("Process exitValue: " + rc);
 				System.out.println("Finish creating slice");
-			}
-           
-		
+			}		
 	}
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
