@@ -87,7 +87,7 @@ Note that InPreSS, Microbat, and TRegression projects are Eclipse plugin project
 
 ## Running the Tool through Script
 
-Please follow the the Readme file which we provided with the tool on zenodo: https://zenodo.org/record/7684134#.Y_3U1C-975g
+Please follow the the Readme file which we provided with the tool on zenodo: https://doi.org/10.5281/zenodo.7684134
 
 ---
 --- 
