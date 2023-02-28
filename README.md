@@ -50,6 +50,9 @@ This directory is the default work directory of the docker container. However, y
 cd /review
 ```
 
+**Note** To run the tool in the docker, please follow the Readme file which we provided with the tool on zenodo: https://doi.org/10.5281/zenodo.7684134 
+
+
 ### Building InPreSS on your machine
 
 InPreSS relies on the TRegression (ERASE) (https://github.com/llmhyy/tregression) project to align the two traces. 
@@ -87,7 +90,7 @@ Note that InPreSS, Microbat, and TRegression projects are Eclipse plugin project
 
 ## Running the Tool through Script
 
-Please follow the the Readme file which we provided with the tool on zenodo: https://doi.org/10.5281/zenodo.7684134
+Please follow the Readme file which we provided with the tool on zenodo: https://doi.org/10.5281/zenodo.7684134
 
 ---
 --- 
