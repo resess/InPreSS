@@ -3,15 +3,20 @@ package resess;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Stack;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Row;
@@ -52,34 +57,42 @@ public class projConfig extends Defects4jProjectConfig{
 			if(bugID==1){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "E";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==2){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "S";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==3){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "S";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==4){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "S";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==5){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "E";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==6){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.configFile = "S";			
+				config.configFile = "S";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==7){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "S";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==8){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "S";
+				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==9){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
@@ -498,11 +511,12 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 ////////////////////////////////////////////////////////////////
 	private static void getSlice(String baseProj, String testFolder, String classFolder, String projectName, int bugID, String depPath) throws IOException, InterruptedException {
 			
-//	        String slicerPath = System.getProperty("user.dir")+"/deps/Slicer4J/scripts/slicer4j.py";
-		    String slicerPath = "/Users/sahar1/Documents/Projects/LibraryUpadate/Code/Tools/Slicer4J/scripts/slicer4j.py";
-//		    String slicerPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4j.py";
+//	        String slicerFullPath = System.getProperty("user.dir")+"/deps/Slicer4J/scripts/slicer4j.py";
+		    String slicerFullPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4j.py";
+		    String slicerOnlyPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4jGetSlice.py";
 			
-//		    String slicerPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4j.py";//thanos
+//		    String slicerFullPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4j.py";//thanos
+//		    String slicerOnlyPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4jGetSlice.py";
         /////////// /////////// /////////// /////////// /////////// /////////// ///////////
 			/////////// /////////// /////////// /////////// /////////// /////////// ///////////
 		    String proPath = baseProj + projectName + "/" + bugID;
@@ -523,15 +537,25 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 			BufferedReader reader = new BufferedReader(new FileReader(file));
 			String testClass = "";
 			String testMethod = "";
-			String sliceLine = "";				
+			String sliceLine = "";	
 			String line = null;
+			int testCounter = 0;
+			boolean found = false;
 			while ((line = reader.readLine()) != null) {
 				if (line.startsWith("---")) {
+					if(testCounter==0) {
+					 testCounter++;
 					 testClass = line.substring(line.indexOf(" ") + 1, line.indexOf("::"));
-					 testMethod = line.substring(line.indexOf("::") + 2, line.length());				
+					 testMethod = line.substring(line.indexOf("::") + 2, line.length());
+					}
+					else {
+						break;
+					}
+					 
 				}
 				else {
 					if (line.contains(testClass) && line.contains(testMethod)) {
+						found = true;
 						String temp = (line.split(":")[1]);
 //						System.out.println(temp);
 //						if (temp.contains(")"))
@@ -543,6 +567,45 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 				}					
 			}
 			reader.close();
+			if (!found) {
+				file = new File(failingFile);
+				 reader = new BufferedReader(new FileReader(file));
+				 testClass = "";
+				 testMethod = "";
+				 sliceLine = "";	
+				 line = null;
+				 testCounter = 0;
+				 found = false;
+				while ((line = reader.readLine()) != null) {
+					if (line.startsWith("---")) {
+						if(testCounter==0) {
+						 testCounter++;
+						 testClass = line.substring(line.indexOf(" ") + 1, line.indexOf("::"));
+						 testMethod = line.substring(line.indexOf("::") + 2, line.length());
+						}
+						else {
+							break;
+						}
+						 
+					}
+					else {
+						if (line.contains(testMethod)) {
+							found = true;
+							String temp = (line.split(":")[1]);
+//							System.out.println(temp);
+//							if (temp.contains(")"))
+//								System.out.println(temp.indexOf(")"));
+//							System.out.println(line.substring(0, line.indexOf("(")));
+							String temp2 = line.substring(0, line.indexOf("(")).split("at ")[1];
+							 testClass = temp2.substring(0, temp2.lastIndexOf("."));
+							sliceLine = temp.substring(0, temp.indexOf(")"));
+//							System.out.println(sliceLine);
+							break;
+						}						    
+					}					
+				}
+				
+			}
 	        /////////// /////////// /////////// /////////// /////////// /////////// ///////////
 			/////////// /////////// /////////// /////////// /////////// /////////// ///////////
 //		    Path Slicer4JResultsPath = Paths.get(proPath+"/results/new/Slicer4JResults");
@@ -599,29 +662,29 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 				System.out.println("Finish creating jar");
 	        
 //		        //3. slice 
-		        cmd = "python3 " + slicerPath +" -j " + proPath + "/results/new/program.jar" + " -o " + proPath + "/results/new/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
-		        System.out.println(cmd);
+		        String cmd2 = "python3 " + slicerFullPath +" -j " + proPath + "/results/new/program.jar" + " -o " + proPath + "/results/new/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
+		        System.out.println(cmd2);
        
-	            String[] commads = {"python3", slicerPath, "-j", proPath + "/results/new/program.jar","-o",proPath + "/results/new/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", buggyPath + depPath};
+	            String[] commads = {"python3", slicerFullPath, "-j", proPath + "/results/new/program.jar","-o",proPath + "/results/new/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", buggyPath + depPath};
 				
 	            Process p = new ProcessBuilder(commads)
 	                    .redirectErrorStream(true)
 	                    .start();
-				in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-				err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-				line1 = null;
-				answer = in.readLine();
-				if(answer == null){
-					String error = err.readLine();
+	            BufferedReader in2 = new BufferedReader(new InputStreamReader(p.getInputStream()));
+	            BufferedReader err2 = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+				String line2 = null;
+				String answer2 = in2.readLine();
+				if(answer2 == null){
+					String error = err2.readLine();
 					if (error != null)
 						System.out.println(error);
 				}
 				else 
-					while ((line1 = in.readLine()) != null) {
-						System.out.println(line1);
+					while ((line2 = in2.readLine()) != null) {
+						System.out.println(line2);
 					}				
-				in.close();
-				err.close();
+				in2.close();
+				err2.close();
 				int rc = p.waitFor();
 //				System.out.println("Process exitValue: " + rc);
 				System.out.println("Finish creating slice");
@@ -629,22 +692,69 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 			}
 	        /////////// /////////// /////////// /////////// /////////// /////////// ///////////
 			/////////// /////////// /////////// /////////// /////////// /////////// ///////////
-	        instrumentedJar = Paths.get(proPath+"/results/old/Slicer4JResults/program_i.jar");
-			if(!Files.exists(instrumentedJar)) {
-				//1. copy the test classes
-				File source = new File(fixPath + testFolder);
-				File dest = new File(fixPath + classFolder);
-				try {
-				    FileUtils.copyDirectory(source, dest);
-				} catch (IOException e) {
-				    e.printStackTrace();
-				}
-//		         cmd = "cp -R " + fixPath + testFolder + "/* " + fixPath + classFolder + "/";	        
-//				 p1 = Runtime.getRuntime().exec(cmd);
-//				 in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-//				 err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
-//				 line1 = null;
-//				 answer = in.readLine();
+//	        instrumentedJar = Paths.get(proPath+"/results/old/Slicer4JResults/program_i.jar");
+//			if(!Files.exists(instrumentedJar)) {
+//				//1. copy the test classes
+//				File source = new File(fixPath + testFolder);
+//				File dest = new File(fixPath + classFolder);
+//				try {
+//				    FileUtils.copyDirectory(source, dest);
+//				} catch (IOException e) {
+//				    e.printStackTrace();
+//				}
+////		         cmd = "cp -R " + fixPath + testFolder + "/* " + fixPath + classFolder + "/";	        
+////				 p1 = Runtime.getRuntime().exec(cmd);
+////				 in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+////				 err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
+////				 line1 = null;
+////				 answer = in.readLine();
+////				if(answer == null){
+////					String error = err.readLine();
+////					if (error != null)
+////						System.out.println(error);
+////				}
+////				else 
+////					while ((line1 = in.readLine()) != null) {
+////						System.out.println(line1);
+////					}				
+////				in.close();
+////				err.close();
+////				p1.waitFor();
+//  
+////				//2. create a jar 
+//				String cmd = "jar cvf " + proPath + "/results/old/program.jar" + " -C " + fixPath + classFolder + " .";
+//				Process p1 = Runtime.getRuntime().exec(cmd);
+//				BufferedReader in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+//				BufferedReader err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
+//				String line1 = null;
+//				String answer = in.readLine();
+//				if(answer == null){
+//					String error = err.readLine();
+//					if (error != null)
+//						System.out.println(error);
+//				}
+////				else 
+////					while ((line1 = in.readLine()) != null) {
+////						System.out.println(line1);
+////					}				
+//				in.close();
+//				err.close();
+//				int c = p1.waitFor();
+////				System.out.println("Process exitValue: " + c);
+//				System.out.println("Finish creating jar");
+//	        
+////		        //3. slice 
+//				cmd = "python3 " + slicerPath +" -j " + proPath + "/results/old/program.jar" + " -o " + proPath + "/results/old/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
+//			        System.out.println(cmd);
+//	            String[] commads2 = {"python3", slicerPath, "-j", proPath + "/results/old/program.jar","-o",proPath + "/results/old/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", fixPath + depPath};
+//				
+//	            Process p = new ProcessBuilder(commads2)
+//	                    .redirectErrorStream(true)
+//	                    .start();
+//				in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//				err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+//				line1 = null;
+//				answer = in.readLine();
 //				if(answer == null){
 //					String error = err.readLine();
 //					if (error != null)
@@ -656,57 +766,270 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 //					}				
 //				in.close();
 //				err.close();
-//				p1.waitFor();
-  
-//				//2. create a jar 
-				String cmd = "jar cvf " + proPath + "/results/old/program.jar" + " -C " + fixPath + classFolder + " .";
-				Process p1 = Runtime.getRuntime().exec(cmd);
-				BufferedReader in = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-				BufferedReader err = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
-				String line1 = null;
-				String answer = in.readLine();
-				if(answer == null){
-					String error = err.readLine();
-					if (error != null)
-						System.out.println(error);
-				}
-//				else 
-//					while ((line1 = in.readLine()) != null) {
-//						System.out.println(line1);
-//					}				
-				in.close();
-				err.close();
-				int c = p1.waitFor();
-//				System.out.println("Process exitValue: " + c);
-				System.out.println("Finish creating jar");
-	        
-//		        //3. slice 
-				cmd = "python3 " + slicerPath +" -j " + proPath + "/results/old/program.jar" + " -o " + proPath + "/results/old/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
-			        System.out.println(cmd);
-	            String[] commads2 = {"python3", slicerPath, "-j", proPath + "/results/old/program.jar","-o",proPath + "/results/old/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", fixPath + depPath};
+//				int rc = p.waitFor();
+////				System.out.println("Process exitValue: " + rc);
+//				System.out.println("Finish creating slice");
+//			}	
+			
+			
+	        Path rawSlice = Paths.get(proPath+"/results/new/Slicer4JResults/raw-slice.log");
+//	        Path rawTrace = Paths.get(proPath+"/results/new/Slicer4JResults/trace.log_icdg.log");
+			if(!Files.exists(rawSlice)) {
+	            String[] commads = {"python3", slicerFullPath, "-j", proPath + "/results/new/program.jar","-o",proPath + "/results/new/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", buggyPath + depPath};
 				
-	            Process p = new ProcessBuilder(commads2)
+	            Process p = new ProcessBuilder(commads)
 	                    .redirectErrorStream(true)
 	                    .start();
-				in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-				err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-				line1 = null;
-				answer = in.readLine();
-				if(answer == null){
-					String error = err.readLine();
+	            BufferedReader in2 = new BufferedReader(new InputStreamReader(p.getInputStream()));
+	            BufferedReader err2 = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+				String line2 = null;
+				String answer2 = in2.readLine();
+				if(answer2 == null){
+					String error = err2.readLine();
 					if (error != null)
 						System.out.println(error);
 				}
 				else 
-					while ((line1 = in.readLine()) != null) {
-						System.out.println(line1);
+					while ((line2 = in2.readLine()) != null) {
+						System.out.println(line2);
 					}				
-				in.close();
-				err.close();
+				in2.close();
+				err2.close();
 				int rc = p.waitFor();
 //				System.out.println("Process exitValue: " + rc);
-				System.out.println("Finish creating slice");
-			}		
+				System.out.println("Finish slicing");
+				
+			}
+//			if(Files.exists(rawSlice)) {	
+//				getSliceStats(baseProj,proPath,projectName,bugID);
+//			}
+	}
+	
+	public static void getSliceStats(String baseProj, String proPath, String projectName,int bugID) {
+		Stack<String> stack = new Stack<String>();
+		
+		 List<String> StmtsTraceList = new ArrayList<String>();
+		 List<String> StmtsSliceList = new ArrayList<String>();
+		 List<String> methodsTraceList = new ArrayList<String>();
+		 List<String> methodsSliceList = new ArrayList<String>();
+		 
+		 List<String> UniqueStmtsTraceList = new ArrayList<String>();
+		 List<String> UniqueStmtsSliceList = new ArrayList<String>();
+		 List<String> UniquemethodsTraceList = new ArrayList<String>();
+		 List<String> UniquemethodsSliceList = new ArrayList<String>();
+
+		 
+		 HashMap<String, List<String>> NodesMapping = new HashMap<>();
+		 HashMap<String, String> StatmentIDMethodInstanceMapping = new HashMap<>();
+		 HashMap<String, String> StatmentIDStatementInstanceMapping = new HashMap<>();
+		
+		File file = new File(proPath + "/results/new/Slicer4JResults/trace.log_icdg.log");
+		BufferedReader br;
+		
+		try {
+			PrintWriter writer;
+			writer = new PrintWriter(proPath + "/results/new/Slicer4JResults/UniquTrace.txt", "UTF-8");
+			br = new BufferedReader(new FileReader(file));
+			String st = br.readLine();
+			String CurrClassName = st.split(", ")[2].trim();
+			String CurrLineNo = st.split("LINENO:")[1].split(":")[0];
+			String CurrStatment = st;
+			String PreMethodName = st.split(", ")[1].split(" ")[1].trim();	
+			List<String> ByteCodeMappings = new ArrayList<String>();
+			ByteCodeMappings.add(st);
+			StatmentIDStatementInstanceMapping.put(st.split(", ")[0].trim(), st);
+			
+			String PrevStatment = st;
+			int counter =0;
+			String CurrMethodName = st.split(", ")[1].split(" ")[1].trim();
+			stack.push(CurrMethodName+"_"+String.valueOf(counter));
+//			System.out.println(st.split(", ")[0].trim() + " : " +  CurrMethodName+"_"+String.valueOf(counter));
+			StatmentIDMethodInstanceMapping.put(st.split(", ")[0].trim(),CurrMethodName+"_"+String.valueOf(counter));				
+			boolean PrevStmIsInvoke = false;
+			boolean PrevStmIsRet = false;
+//			System.out.println("pre:" + PrevStmIsInvoke);
+			boolean ThisStmtIsReturnStm = st.split(", ")[3].startsWith("return:");
+//			System.out.println("ret:" + ThisStmtIsReturnStm);
+			
+			while ((st = br.readLine()) != null) {
+				StatmentIDStatementInstanceMapping.put(st.split(", ")[0].trim(), st);
+				if (!st.contains("LINENO"))
+					continue;
+				String clasName = st.split(", ")[2].trim();
+				String Line = st.split("LINENO:")[1].split(":")[0];
+				String method = st.split(", ")[1].split(" ")[1].trim();	
+
+				if((!method.equals(PreMethodName)) && PrevStmIsRet) {	
+					stack.pop();
+				}
+				if(stack.isEmpty() && PrevStmIsRet) {
+					counter++;
+				    stack.push(method+"_"+String.valueOf(counter));
+				}
+				
+				if (clasName.equals(CurrClassName) && Line.equals(CurrLineNo) ) {
+		
+					ByteCodeMappings.add(st);
+					if((!method.equals(PreMethodName)) && PrevStmIsInvoke){
+						counter++;
+					    stack.push(method+"_"+String.valueOf(counter));
+						
+					}
+					
+
+				} else {// add the previous and initilize
+					if (PrevStmIsInvoke){
+						counter++;
+					    stack.push(method+"_"+String.valueOf(counter));					
+					}
+					StmtsTraceList.add(CurrStatment);
+//					NodesMapping.put(statment, ByteCodeMappings);
+					writer.println(CurrStatment);
+					CurrClassName = clasName;
+					CurrLineNo = Line;
+					CurrStatment = st;					
+					ByteCodeMappings = new ArrayList<String>();
+					ByteCodeMappings.add(st);
+				}
+//				System.out.println(st.split(", ")[0].trim() + " : " +  stack.peek());
+				StatmentIDMethodInstanceMapping.put(st.split(", ")[0].trim(),stack.peek());	
+				
+				
+				PrevStmIsInvoke = st.split(", ")[3].split(":LINENO")[0].contains("invoke");
+				PreMethodName = method;
+				PrevStatment = st;
+				PrevStmIsRet = st.split(", ")[3].trim().startsWith("return");
+			}
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	
+	     String previousMethod = "";
+		 for(int i=0; i<StmtsTraceList.size(); i++) {				
+			String clasName =  StmtsTraceList.get(i).split(", ")[2].trim();
+			String Line =  StmtsTraceList.get(i).split("LINENO:")[1].split(":")[0];
+			String stmt = clasName + " line " + Line;
+			String methodName = StmtsTraceList.get(i).split(", ")[1].split(" ")[1].trim();
+			
+			if(!previousMethod.contains(methodName)) {//naiive solution
+				previousMethod=methodName;
+				methodsTraceList.add(methodName);
+			}
+//			if(!methodsTraceList.contains(StatmentIDMethodInstanceMapping.get(StmtsTraceList.get(i).split(", ")[0].trim()))) {
+//				methodsTraceList.add(StatmentIDMethodInstanceMapping.get(StmtsTraceList.get(i).split(", ")[0].trim()));
+//			}
+//			
+			if(!UniquemethodsTraceList.contains(methodName))//add unique methods
+				UniquemethodsTraceList.add(methodName);
+			
+			if(!UniqueStmtsTraceList.contains(stmt))//add unique statements
+				UniqueStmtsTraceList.add(stmt);	        
+		 }
+		 
+		 
+		 
+		 file = new File(proPath + "/results/new/Slicer4JResults/raw-slice.log");
+		 
+			try {
+				br = new BufferedReader(new FileReader(file));
+				String st = br.readLine();
+				String CurrClassName = st.split(" ")[0].split(":")[0].trim();
+				String CurrLineNo = st.split(" ")[0].split(":")[1].trim();
+				String CurrStatment = st;
+				List<String> ByteCodeMappings = new ArrayList<String>();
+				ByteCodeMappings.add(st);
+				
+				while ((st = br.readLine()) != null) {
+					String clasName = st.split("    ")[0].split(":")[0].trim();
+					String Line = st.split("    ")[0].split(":")[1].trim();
+					if (clasName.equals(CurrClassName) && Line.equals(CurrLineNo)) {
+						ByteCodeMappings.add(st);
+					} else {// add the previous and initilize
+						StmtsSliceList.add(CurrStatment);
+//						NodesMapping.put(statment, ByteCodeMappings);
+						CurrClassName = clasName;
+						CurrLineNo = Line;
+						CurrStatment = st;
+						ByteCodeMappings = new ArrayList<String>();
+						ByteCodeMappings.add(st);
+					}
+				}
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		 
+
+		     previousMethod = "";
+			 for(int i=0; i<StmtsSliceList.size(); i++) {				
+				String CurrClassName = StmtsSliceList.get(i).split("    ")[0].split(":")[0].trim();
+				String CurrLineNo = StmtsSliceList.get(i).split("    ")[0].split(":")[1].trim();
+				String stmt = CurrClassName + " line " + CurrLineNo;
+				String stmtID = StmtsSliceList.get(i).split("    ")[2].split(":")[0].trim();
+				String methodName = StatmentIDStatementInstanceMapping.get(stmtID).split(", ")[1].split(" ")[1].trim();
+				
+				if(!previousMethod.contains(methodName)) {//naiive solution
+					previousMethod=methodName;
+					methodsSliceList.add(methodName);
+				}
+//				if(!methodsSliceList.contains(StatmentIDMethodInstanceMapping.get(stmtID))) {
+//					methodsSliceList.add(StatmentIDMethodInstanceMapping.get(stmtID));
+//				}
+				if(!UniquemethodsSliceList.contains(methodName))//add unique methods
+					UniquemethodsSliceList.add(methodName);
+				
+				if(!UniqueStmtsSliceList.contains(stmt))//add unique statements
+					UniqueStmtsSliceList.add(stmt);	        
+			 }
+		  
+		 
+			String results = baseProj+"/results/Slicer4JSliceStats.xlsx";
+			File tempFile = new File(results);
+			boolean FirstTime = false;
+			if (!tempFile.exists()) {
+			   FirstTime=true;
+			   XSSFWorkbook workbook = new XSSFWorkbook();
+			   XSSFSheet sheet = workbook.createSheet("stats");
+			   try {
+			       FileOutputStream outputStream = new FileOutputStream(results);
+			       workbook.write(outputStream);
+			       workbook.close();
+			       outputStream.close();
+			   } catch (Exception e) {
+			   }
+			 }		
+			 if (FirstTime) {		    	
+			     String[] header = {"project Name", "Bug ID", "# Unique Stmt instances in Trace", "# Unique Stmt instances in Slice","Unique Stmts Reduction", "# Stmts in Trace", "# Stmts in Slice", "Stmts Reduction", "# Unique Methods in Trace", "# Unique Methods in Slice"," Unique Methods Reduction", "# Methods in Trace", "# Methods in Slice","Methods Reduction"};
+			     WriteToExcel(results, header, "stats",false, true);
+			 }
+			 double UniqestmtReduc = ((Double.valueOf(UniqueStmtsTraceList.size())-Double.valueOf(UniqueStmtsSliceList.size()))/Double.valueOf(UniqueStmtsTraceList.size())) * 100.0;
+			 double UniqemethodsReduc = ((Double.valueOf(UniquemethodsTraceList.size())-Double.valueOf(UniquemethodsSliceList.size()))/Double.valueOf(UniquemethodsTraceList.size())) * 100.0;
+			 double stmtReduc = ((Double.valueOf(StmtsTraceList.size())-Double.valueOf(StmtsSliceList.size()))/Double.valueOf(StmtsTraceList.size())) * 100.0;
+			 double methodsReduc = ((Double.valueOf(methodsTraceList.size())-Double.valueOf(methodsSliceList.size()))/Double.valueOf(methodsTraceList.size())) * 100.0;
+			 
+			 String[] data = {projectName, String.valueOf(bugID), 
+					 String.valueOf(UniqueStmtsTraceList.size()),String.valueOf(UniqueStmtsSliceList.size()),String.valueOf(UniqestmtReduc),
+					 String.valueOf(StmtsTraceList.size()),String.valueOf(StmtsSliceList.size()),String.valueOf(stmtReduc),
+					 String.valueOf(UniquemethodsTraceList.size()),String.valueOf(UniquemethodsSliceList.size()),String.valueOf(UniqemethodsReduc),
+					 String.valueOf(methodsTraceList.size()),String.valueOf(methodsSliceList.size()),String.valueOf(methodsReduc)};
+			 WriteToExcel(results,data,"stats",false, false);			 
+			 System.out.println("##############Finish##############");
+				
 	}
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////

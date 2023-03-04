@@ -76,7 +76,7 @@ def main():
 def instrument(jar_file: str, out_dir: str) -> str:
     instr_file = "instr-debug.log"
     print("Instrumenting the JAR", flush=True)
-    instr_cmd = f"java -Xmx8g -cp \"{slicer4j_dir}/Slicer4J/target/slicer4j-jar-with-dependencies.jar:{slicer4j_dir}/Slicer4J/target/lib/*\" ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer -m i -j {jar_file} -o {out_dir}/ -sl {out_dir}/static_log.log -lc {logger_jar} > {out_dir}/{instr_file} 2>&1"
+    instr_cmd = f"java -Xss5m -Xmx16g -cp \"{slicer4j_dir}/Slicer4J/target/slicer4j-jar-with-dependencies.jar:{slicer4j_dir}/Slicer4J/target/lib/*\" ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer -m i -j {jar_file} -o {out_dir}/ -sl {out_dir}/static_log.log -lc {logger_jar} > {out_dir}/{instr_file} 2>&1"
     os.system(instr_cmd)
     instrumented_jar = os.path.basename(jar_file).replace(".jar", "_i.jar")
     return out_dir + os.sep + instrumented_jar
@@ -85,11 +85,11 @@ def instrument(jar_file: str, out_dir: str) -> str:
 def run(instrumented_jar, dependencies, out_dir, test_class, test_method, main_class_args):
     print("Running the instrumented JAR", flush=True)
     if main_class_args is None:
-        cmd = f"java -Xmx8g -cp \"{script_dir}/SingleJUnitTestRunner.jar:{script_dir}/junit-4.8.2.jar:{instrumented_jar}:{dependencies}/*\" SingleJUnitTestRunner {test_class}#{test_method} > {out_dir}/trace_full.log"
+        cmd = f"java -Xss5m -Xmx16g -cp \"{script_dir}/SingleJUnitTestRunner.jar:{script_dir}/junit-4.8.2.jar:{instrumented_jar}:{dependencies}/*\" SingleJUnitTestRunner {test_class}#{test_method} > {out_dir}/trace_full.log"
     else:
         if main_class_args.startswith("\"") and main_class_args.endswith("\""):
             main_class_args = main_class_args[1:-1]
-        cmd = f"java -Xmx8g -cp \"{instrumented_jar}:{dependencies}/*\" {main_class_args} > {out_dir}/trace_full.log"
+        cmd = f"java -Xss5m -Xmx16g -cp \"{instrumented_jar}:{dependencies}/*\" {main_class_args} > {out_dir}/trace_full.log"
     print(f"Running instrumented JAR", flush=True)
     print(f"------------------------------------")
     os.system(cmd)
@@ -114,7 +114,7 @@ def dynamic_slice(jar_file=None, out_dir=None, backward_criterion=None, variable
         print(f"Slicing from line {backward_criterion} with variables {variables}", flush=True)
     else:
         print(f"Slicing from line {backward_criterion}", flush=True)
-    graph_cmd = f"java -Xmx8g -cp \"{slicer4j_dir}/Slicer4J/target/slicer4j-jar-with-dependencies.jar:{slicer4j_dir}/Slicer4J/target/lib/*\" ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer -m g -j {jar_file} -t {out_dir}/trace.log -o {out_dir}/ -sl {out_dir}/static_log.log -sd {slicer4j_dir}/models/summariesManual -tw {slicer4j_dir}/models/EasyTaintWrapperSource.txt > {out_dir}/{graph_file} 2>&1"
+    graph_cmd = f"java -Xss5m -Xmx16g -cp \"{slicer4j_dir}/Slicer4J/target/slicer4j-jar-with-dependencies.jar:{slicer4j_dir}/Slicer4J/target/lib/*\" ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer -m g -j {jar_file} -t {out_dir}/trace.log -o {out_dir}/ -sl {out_dir}/static_log.log -sd {slicer4j_dir}/models/summariesManual -tw {slicer4j_dir}/models/EasyTaintWrapperSource.txt > {out_dir}/{graph_file} 2>&1"
     os.system(graph_cmd)
 
     clazz, lineno = backward_criterion.split(":")
@@ -131,7 +131,7 @@ def dynamic_slice(jar_file=None, out_dir=None, backward_criterion=None, variable
     if variables:
         extra_options += "-sv " + str(variables)
 
-    slice_cmd = f"java -Xmx8g -cp \"{slicer4j_dir}/Slicer4J/target/slicer4j-jar-with-dependencies.jar:{slicer4j_dir}/Slicer4J/target/lib/*\" ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer -m s -j {jar_file} -t {out_dir}/trace.log -o {out_dir}/ -sl {out_dir}/static_log.log -sd {slicer4j_dir}/models/summariesManual -tw {slicer4j_dir}/models/EasyTaintWrapperSource.txt -sp {slice_line} {extra_options} > {out_dir}/{slice_file} 2>&1"
+    slice_cmd = f"java -Xss5m -Xmx16g -cp \"{slicer4j_dir}/Slicer4J/target/slicer4j-jar-with-dependencies.jar:{slicer4j_dir}/Slicer4J/target/lib/*\" ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer -m s -j {jar_file} -t {out_dir}/trace.log -o {out_dir}/ -sl {out_dir}/static_log.log -sd {slicer4j_dir}/models/summariesManual -tw {slicer4j_dir}/models/EasyTaintWrapperSource.txt -sp {slice_line} {extra_options} > {out_dir}/{slice_file} 2>&1"
     os.system(slice_cmd)
     arr = [x for x in os.listdir(out_dir) if x.startswith("result_md")]
     for a in arr:

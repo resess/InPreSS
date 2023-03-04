@@ -11,14 +11,11 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/tregression"/>
 	<classpathentry kind="lib" path="/microbat/lib/org.eclipse.jdt.core-3.10.0.jar"/>
 	<classpathentry kind="lib" path="deps/lib/core-jar-with-dependencies.jar"/>
-	<classpathentry kind="lib" path="deps/lib/slicer4j-jar-with-dependencies.jar"/>
-	<classpathentry kind="lib" path="deps/lib/soot-infoflow-android-trunk-jar-with-dependencies.jar"/>
-	<classpathentry kind="lib" path="deps/lib/soot-infoflow-trunk.jar"/>
-	<classpathentry kind="lib" path="deps/lib/soot-infoflow-trunk-jar-with-dependencies.jar"/>
 	<classpathentry kind="lib" path="deps/lib/core-2.1.2.jar"/>
 	<classpathentry kind="lib" path="deps/lib/gen.jdt-2.1.2.jar"/>
 	<classpathentry kind="lib" path="deps/lib/simmetrics-core-3.2.3.jar"/>
 	<classpathentry kind="lib" path="deps/lib/org.eclipse.core.runtime-3.18.0.jar"/>
 	<classpathentry kind="lib" path="deps/lib/org.eclipse.equinox.common-3.12.0.jar"/>
+	<classpathentry kind="lib" path="deps/Slicer4J/Slicer4J/target/slicer4j-jar-with-dependencies.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
