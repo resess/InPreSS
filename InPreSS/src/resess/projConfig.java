@@ -112,6 +112,7 @@ public class projConfig extends Defects4jProjectConfig{
             Path newPathT = Paths.get(buggyPath+"build-tests");
             Path oldPathT = Paths.get(fixPath+"build-tests");
 			if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//			if(!Files.exists(newPath) || !Files.exists(newPathT)) {
 				saveBugAndTerminate(baseProjPath,projectName, bugID);
 				System.exit(0);
 			}	
@@ -125,6 +126,7 @@ public class projConfig extends Defects4jProjectConfig{
             Path newPath = Paths.get(buggyPath+"build");
             Path oldPath = Paths.get(fixPath+"build");
 			if(!Files.exists(newPath) || !Files.exists(oldPath)) {
+//            if(!Files.exists(newPath)) {
 				saveBugAndTerminate(baseProjPath,projectName, bugID);
 				System.exit(0);
 			}			
@@ -159,6 +161,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"tests");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"tests");
 				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//				if(!Files.exists(newPath) || !Files.exists(newPathT)) {
+						
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}	
@@ -174,7 +178,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"test-classes");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"test-classes");
 				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
-					saveBugAndTerminate(baseProjPath,projectName, bugID);
+//	            if(!Files.exists(newPath) || !Files.exists(newPathT)) {					
+	            	saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
 				config = new projConfig("src"+File.separator+"test", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);				
@@ -188,7 +193,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"test-classes");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"test-classes");
 				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
-					saveBugAndTerminate(baseProjPath,projectName, bugID);
+//	            if(!Files.exists(newPath) || !Files.exists(newPathT)) {						
+	            	saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);				
@@ -202,6 +208,7 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"tests");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"tests");
 				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//				if(!Files.exists(newPath) || !Files.exists(newPathT)) {
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
@@ -224,6 +231,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"test-classes");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"test-classes");
 				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//					if(!Files.exists(newPath) || !Files.exists(newPathT)) {
+						
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
@@ -238,6 +247,7 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"test-classes");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"test-classes");
 				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//				if(!Files.exists(newPath) || !Files.exists(newPathT) ) {						
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
@@ -372,7 +382,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path oldPath = Paths.get(fixPath+"build"+File.separator+"classes"+File.separator+"main");
 	            Path newPathT = Paths.get(buggyPath+"build"+File.separator+"classes"+File.separator+"test");
 	            Path oldPathT = Paths.get(fixPath+"build"+File.separator+"classes"+File.separator+"test");
-				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+				if(!Files.exists(newPath) || !Files.exists(newPathT) ) {
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
@@ -387,7 +398,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path oldPath = Paths.get(fixPath+"target"+File.separator+"classes");
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"test-classes");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"test-classes");
-	            if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//				if(!Files.exists(newPath) || !Files.exists(newPathT) ) {
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
@@ -410,7 +422,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path oldPath = Paths.get(fixPath+"target"+File.separator+"classes");
 	            Path newPathT = Paths.get(buggyPath+"target"+File.separator+"test-classes");
 	            Path oldPathT = Paths.get(fixPath+"target"+File.separator+"test-classes");
-	            if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//				if(!Files.exists(newPath) || !Files.exists(newPathT) ) {
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
@@ -424,7 +437,8 @@ public class projConfig extends Defects4jProjectConfig{
 	            Path oldPath = Paths.get(fixPath+"build"+File.separator+"classes");
 	            Path newPathT = Paths.get(buggyPath+"build"+File.separator+"tests");
 	            Path oldPathT = Paths.get(fixPath+"build"+File.separator+"tests");
-	            if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+				if(!Files.exists(newPath) || !Files.exists(oldPath) || !Files.exists(newPathT) || !Files.exists(oldPathT)) {
+//				if(!Files.exists(newPath) || !Files.exists(newPathT) ) {
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
 				}
@@ -512,11 +526,11 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 	private static void getSlice(String baseProj, String testFolder, String classFolder, String projectName, int bugID, String depPath) throws IOException, InterruptedException {
 			
 //	        String slicerFullPath = System.getProperty("user.dir")+"/deps/Slicer4J/scripts/slicer4j.py";
-		    String slicerFullPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4j.py";
-		    String slicerOnlyPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4jGetSlice.py";
+//		    String slicerFullPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4j.py";
+//		    String slicerOnlyPath = "/Users/sahar1/Documents/Github/InPreSS/InPreSS/deps/Slicer4J/scripts/slicer4jGetSlice.py";
 			
-//		    String slicerFullPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4j.py";//thanos
-//		    String slicerOnlyPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4jGetSlice.py";
+		    String slicerFullPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4j.py";//thanos
+		    String slicerOnlyPath = "/data/shrbadihi/projects/client_library/libre/Jars/deps/Slicer4J/scripts/slicer4jGetSlice.py";
         /////////// /////////// /////////// /////////// /////////// /////////// ///////////
 			/////////// /////////// /////////// /////////// /////////// /////////// ///////////
 		    String proPath = baseProj + projectName + "/" + bugID;
@@ -744,9 +758,9 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 //				System.out.println("Finish creating jar");
 //	        
 ////		        //3. slice 
-//				cmd = "python3 " + slicerPath +" -j " + proPath + "/results/old/program.jar" + " -o " + proPath + "/results/old/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
+//				cmd = "python3 " + slicerFullPath +" -j " + proPath + "/results/old/program.jar" + " -o " + proPath + "/results/old/Slicer4JResults"+" -b " + testClass + ":" + sliceLine + " -tc " + testClass + " -tm " + testMethod + " -dep " + buggyPath + depPath;
 //			        System.out.println(cmd);
-//	            String[] commads2 = {"python3", slicerPath, "-j", proPath + "/results/old/program.jar","-o",proPath + "/results/old/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", fixPath + depPath};
+//	            String[] commads2 = {"python3", slicerFullPath, "-j", proPath + "/results/old/program.jar","-o",proPath + "/results/old/Slicer4JResults","-b",testClass + ":" + sliceLine,"-tc",testClass,"-tm",testMethod,"-dep", fixPath + depPath};
 //				
 //	            Process p = new ProcessBuilder(commads2)
 //	                    .redirectErrorStream(true)
@@ -800,9 +814,10 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 				System.out.println("Finish slicing");
 				
 			}
-//			if(Files.exists(rawSlice)) {	
-//				getSliceStats(baseProj,proPath,projectName,bugID);
-//			}
+			if(Files.exists(rawSlice)) {	
+				getSliceStats(baseProj,proPath,projectName,bugID);
+			}
+			System.exit(0);
 	}
 	
 	public static void getSliceStats(String baseProj, String proPath, String projectName,int bugID) {
@@ -838,6 +853,7 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 			List<String> ByteCodeMappings = new ArrayList<String>();
 			ByteCodeMappings.add(st);
 			StatmentIDStatementInstanceMapping.put(st.split(", ")[0].trim(), st);
+			StmtsTraceList.add(st);
 			
 			String PrevStatment = st;
 			int counter =0;
@@ -941,11 +957,12 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 			try {
 				br = new BufferedReader(new FileReader(file));
 				String st = br.readLine();
-				String CurrClassName = st.split(" ")[0].split(":")[0].trim();
-				String CurrLineNo = st.split(" ")[0].split(":")[1].trim();
+				String CurrClassName = st.split("    ")[0].split(":")[0].trim();
+				String CurrLineNo = st.split("    ")[0].split(":")[1].trim();
 				String CurrStatment = st;
 				List<String> ByteCodeMappings = new ArrayList<String>();
 				ByteCodeMappings.add(st);
+				StmtsSliceList.add(st);
 				
 				while ((st = br.readLine()) != null) {
 					String clasName = st.split("    ")[0].split(":")[0].trim();
@@ -961,6 +978,27 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 						ByteCodeMappings = new ArrayList<String>();
 						ByteCodeMappings.add(st);
 					}
+				}
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			file = new File(proPath + "/results/new/Slicer4JResults/slice-dependencies.log");
+			int controls = 0;
+			try {
+				br = new BufferedReader(new FileReader(file));
+				String st = br.readLine();
+			
+				while ((st = br.readLine()) != null) {
+					if(st.contains("<--control--"))
+						controls++;
 				}
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
@@ -1014,7 +1052,7 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 			   }
 			 }		
 			 if (FirstTime) {		    	
-			     String[] header = {"project Name", "Bug ID", "# Unique Stmt instances in Trace", "# Unique Stmt instances in Slice","Unique Stmts Reduction", "# Stmts in Trace", "# Stmts in Slice", "Stmts Reduction", "# Unique Methods in Trace", "# Unique Methods in Slice"," Unique Methods Reduction", "# Methods in Trace", "# Methods in Slice","Methods Reduction"};
+			     String[] header = {"project Name", "Bug ID", "# Unique Stmt instances in Trace", "# Unique Stmt instances in Slice","Unique Stmts Reduction", "# Stmts in Trace", "# Stmts in Slice", "Stmts Reduction", "# Stmts in Thin Slice", "# Unique Methods in Trace", "# Unique Methods in Slice"," Unique Methods Reduction", "# Methods in Trace", "# Methods in Slice","Methods Reduction"};
 			     WriteToExcel(results, header, "stats",false, true);
 			 }
 			 double UniqestmtReduc = ((Double.valueOf(UniqueStmtsTraceList.size())-Double.valueOf(UniqueStmtsSliceList.size()))/Double.valueOf(UniqueStmtsTraceList.size())) * 100.0;
@@ -1024,7 +1062,7 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 			 
 			 String[] data = {projectName, String.valueOf(bugID), 
 					 String.valueOf(UniqueStmtsTraceList.size()),String.valueOf(UniqueStmtsSliceList.size()),String.valueOf(UniqestmtReduc),
-					 String.valueOf(StmtsTraceList.size()),String.valueOf(StmtsSliceList.size()),String.valueOf(stmtReduc),
+					 String.valueOf(StmtsTraceList.size()),String.valueOf(StmtsSliceList.size()),String.valueOf(stmtReduc),String.valueOf(StmtsSliceList.size()-controls),
 					 String.valueOf(UniquemethodsTraceList.size()),String.valueOf(UniquemethodsSliceList.size()),String.valueOf(UniqemethodsReduc),
 					 String.valueOf(methodsTraceList.size()),String.valueOf(methodsSliceList.size()),String.valueOf(methodsReduc)};
 			 WriteToExcel(results,data,"stats",false, false);			 

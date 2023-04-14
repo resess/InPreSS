@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Row;
@@ -24,6 +25,7 @@ import microbat.model.trace.TraceNode;
 import tregression.SimulationFailException;
 import tregression.empiricalstudy.Defects4jProjectConfig;
 import tregression.empiricalstudy.RootCauseFinder;
+import tregression.empiricalstudy.RootCauseNode;
 import tregression.empiricalstudy.Simulator;
 import tregression.empiricalstudy.TestCase;
 import tregression.model.PairList;
@@ -174,7 +176,8 @@ public class generateResults {
 		System.out.println("#################################");
 		RootCauseFinder rootcauseFinder = new RootCauseFinder();
 		rootcauseFinder.setRootCauseBasedOnDefects4J(PairList, diffMatcher, newTrace, oldTrace);
-		
+//		getRootCauseLocationInTrace(basePath, projectName, bugID, rootcauseFinder.getRealRootCaseList(),newTrace,oldTrace);
+//		System.exit(0);
 		//////////////////////////
 		System.out.println("#################################");
 		Simulator simulator = new Simulator(useSliceBreaker, enableRandom, breakLimit);
@@ -194,6 +197,71 @@ public class generateResults {
 		}
 		
 		return;
+	}
+	private void getRootCauseLocationInTrace(String basePath, String projectName, String bugID, List<RootCauseNode> realRootCaseList, Trace newTrace, Trace oldTrace) {
+		
+    	String results = basePath+"/results/BugPosition.xlsx";
+	    File tempFile = new File(results);
+	    boolean FirstTime = false;
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######	
+		if (!tempFile.exists()) {
+	        FirstTime=true;
+	        XSSFWorkbook workbook = new XSSFWorkbook();
+	        XSSFSheet sheet = workbook.createSheet("stats");
+	        try {
+	        	FileOutputStream outputStream = new FileOutputStream(results);
+	            workbook.write(outputStream);
+	            workbook.close();
+	        	outputStream.close();
+	        } catch (Exception e) {
+	        }
+	    }	
+		ArrayList<Integer> old_bugs = new ArrayList<Integer>();
+		ArrayList<Integer> new_bugs = new ArrayList<Integer>();
+		
+		for (int i =0 ; i<realRootCaseList.size();i++) {
+			if(realRootCaseList.get(i).isOnBefore()) {
+//				System.out.println(realRootCaseList.get(i));
+				new_bugs.add(Integer.valueOf(realRootCaseList.get(i).toString().split(": order ")[1].split("~")[0]));
+			}
+			else{
+				old_bugs.add(Integer.valueOf(realRootCaseList.get(i).toString().split(": order ")[1].split("~")[0]));
+			}
+		}
+		Collections.sort(old_bugs);
+		Collections.sort(new_bugs);
+		Integer old_first_bug_position = 0;
+		Integer old_last_bug_position = 0;
+		Integer new_first_bug_position = 0;
+		Integer new_last_bug_position = 0;
+		if(old_bugs.size()!=0) {
+			 old_first_bug_position = old_bugs.get(0);
+			 old_last_bug_position = old_bugs.get(old_bugs.size()-1);
+		}
+		if(new_bugs.size()!=0) {
+			 new_first_bug_position = new_bugs.get(0);
+			 new_last_bug_position = new_bugs.get(new_bugs.size()-1);
+		}
+		
+		double old_first_bug_relative_position = (100.0*old_first_bug_position)/(double)(oldTrace.getExecutionList().size());
+		double old_last_bug_relative_position = (100.0*old_last_bug_position)/(double)(oldTrace.getExecutionList().size());
+		double new_first_bug_relative_position = (100.0*new_first_bug_position)/(double)(newTrace.getExecutionList().size());
+		double new_last_bug_relative_position = (100.0*new_last_bug_position)/(double)(newTrace.getExecutionList().size());
+
+        if (FirstTime) {		    	
+	        String[] header = {"Project Name", "Bug ID", 
+	        		"Old trace size (#T)", "position of the first bug", "relative position of the frirst bug", "position of the last bug", "relative position of the last bug", 
+	        		"New trace size (#T)", "position of the first bug", "relative position of the frirst bug", "position of the last bug", "relative position of the last bug"};
+	        WriteToExcel(results, header, "stats",false, true);
+	    }
+	    String[] data = {projectName, bugID, String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(old_first_bug_position), String.valueOf(old_first_bug_relative_position), 
+	    		 String.valueOf(old_last_bug_position), String.valueOf(old_last_bug_relative_position),
+	    		String.valueOf(newTrace.getExecutionList().size()), String.valueOf(new_first_bug_position), String.valueOf(new_first_bug_relative_position), 
+	    		 String.valueOf(new_last_bug_position), String.valueOf(new_last_bug_relative_position),};
+	    WriteToExcel(results,data,"stats",false, false);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////

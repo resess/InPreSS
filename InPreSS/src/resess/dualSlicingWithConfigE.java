@@ -427,6 +427,21 @@ public class dualSlicingWithConfigE {
 			TraceNode step = workList.remove(0);
 		    updateWorklistSlice(slice,workList,dualPairList,slice_CashDeps, step, newTrace,typeChecker,matcher);				
 		}
+		
+
+		Path path = Paths.get(proPath+"/results/new");		
+		if(!Files.exists(path)) {
+			new File(proPath+"/results/new").mkdirs();		
+		}
+		PrintWriter writer = null;
+		try {
+			writer = new PrintWriter(proPath+"/results/new/Slice.txt", "UTF-8");
+		} catch (FileNotFoundException | UnsupportedEncodingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+
 	    
 		 List<String> UniqueStmtsTraceList = new ArrayList<String>();
 		 List<String> UniqueStmtsSliceList = new ArrayList<String>();
@@ -457,8 +472,10 @@ public class dualSlicingWithConfigE {
 				UniqueStmtsTraceList.add(temp);	        
 		 }
 		 previousMethod = "";
-		 for(int i=0; i<slice.size(); i++) {				
-				String temp = slice.get(i).getClassCanonicalName();
+		 for(int i=0; i<slice.size(); i++) {	
+			    writer.println(slice.get(i).toString());	
+				
+			    String temp = slice.get(i).getClassCanonicalName();
 				String methodName = slice.get(i).getMethodName();
 				if(methodName != null){
 					temp = temp + ":" + methodName;
@@ -476,7 +493,8 @@ public class dualSlicingWithConfigE {
 				if(!UniqueStmtsSliceList.contains(temp))
 					UniqueStmtsSliceList.add(temp);	        
 		 }
-			String results = basePath+"/results/SliceStats.xlsx";
+		 writer.close();
+			String results = basePath+"/results/SliceStatsERASE.xlsx";
 			File tempFile = new File(results);
 			boolean FirstTime = false;
 			if (!tempFile.exists()) {
