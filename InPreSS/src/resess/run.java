@@ -31,7 +31,7 @@ public class run {
 		String testcase = args[3];
 		
 //		String EreasOrSlicer = args[4];
-		String EreasOrSlicer = "E";
+		String EreasOrSlicer = "S";
 		
 		String proPath = basePath + projectName + "/" + bugID;
 		String buggyPath = proPath + "/bug";
