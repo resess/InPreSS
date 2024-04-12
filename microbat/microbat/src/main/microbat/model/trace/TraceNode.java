@@ -1039,9 +1039,9 @@ public class TraceNode{
 	
 	public TraceNode getInvocationMethodOrDominator() {
 		TraceNode controlDom = getControlDominator();
-		//System.out.println("first control domiator : " + controlDom);
+//		System.out.println("first control domiator : " + controlDom);
 		TraceNode invocationParent = getInvocationParent();
-		//System.out.println("second control domiator : " + invocationParent);
+//		System.out.println("second control domiator : " + invocationParent);
 		
 		if(controlDom!=null && invocationParent!=null) {
 			if(controlDom.getOrder()<invocationParent.getOrder()) {
@@ -1060,7 +1060,52 @@ public class TraceNode{
 		
 		return null;
 	}
+	public void constructControlDomianceRelation() {
+		if(trace.getExecutionList().size()>1){
+			for(int i=trace.getExecutionList().size()-1; i>=1; i--){
+				TraceNode dominatee = trace.getExecutionList().get(i);
+				List<TraceNode> controlDominators = findControlDominators(dominatee.getOrder());
+				
+				for(TraceNode controlDominator: controlDominators){
+//					System.out.println("control domiator : " + controlDominator);
+//					dominatee.addControlDominator(controlDominator);
+//					controlDominator.addControlDominatee(dominatee);
+				}
+			}			
+		}
+		
+	}
 
+	private List<TraceNode> findControlDominators(int startOrder) {
+		
+		List<TraceNode> controlDominators = new ArrayList<>();
+
+		TraceNode dominatee = trace.getExecutionList().get(startOrder-1);
+		for(int i=startOrder-1-1; i>=0; i--){
+			TraceNode node = trace.getExecutionList().get(i);
+			if(node.isConditional()){
+				System.out.println("node is condition: " + node);
+				Scope conditionScope = node.getControlScope();
+				System.out.println("node scope: " + conditionScope.toString());
+				if(conditionScope != null){
+					if(conditionScope.containsNodeScope(dominatee)){
+						controlDominators.add(node);
+						return controlDominators;
+					}
+//					else if(conditionScope.hasJumpStatement()){
+//						controlDominators.add(node);
+//					}
+				}
+				
+			}
+			
+			if(node.equals(dominatee.getInvocationParent())){
+				dominatee = dominatee.getInvocationParent();
+			}
+		}
+		
+		return controlDominators;
+	}
 	public Trace getTrace() {
 		return trace;
 	}

@@ -56,8 +56,8 @@ public class projConfig extends Defects4jProjectConfig{
 		if (projectName.equals("InPreSS")) {
 			if(bugID==1){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-//				config.configFile = "E";
-				config.configFile = "S";
+				config.configFile = "E";
+//				config.configFile = "S";
 				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==2){
@@ -77,8 +77,8 @@ public class projConfig extends Defects4jProjectConfig{
 			}
 			else if(bugID==5){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-//				config.configFile = "E";
-				config.configFile = "S";
+				config.configFile = "E";
+//				config.configFile = "S";
 				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==6){
@@ -104,6 +104,9 @@ public class projConfig extends Defects4jProjectConfig{
 		if (projectName.equals("Toy")) {
 			if(bugID<21){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
+				config.configFile = ereasOrSlicer;
+				if(config.configFile.contentEquals("S"))
+					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}			
 		}
 		////////////////////////////////////////////////////////////////
@@ -607,7 +610,7 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 									line.contains("com.intuit.wasabi")||line.contains("com.fizzed")||
 									line.contains("dagger.")||line.contains("com.thoughtworks")||
 									line.contains("at org.jfree") || line.contains("at com.google.javascript") || line.contains("at org.apache.commons")|| 
-									line.contains("at org.mockito") || line.contains("at com.google.debugging") || line.contains("at org.joda.time")) {
+									line.contains("at org.mockito") || line.contains("at com.google.debugging") || line.contains("at org.joda.time")|| line.contains("at com.hanan")) {
 								if(line.contains(":")) {								
 									String temp = (line.split(":")[1]);
 		//							System.out.println(temp);
@@ -900,9 +903,9 @@ public static void WriteToExcel(String ExcelFilePath, String[] RowData, String s
 				System.out.println("Finish New slicing");
 				
 			}
-			if(Files.exists(rawSlice)) {	
-				getSliceStats(baseProj,proPath,projectName,bugID,traceTime);
-			}
+//			if(Files.exists(rawSlice)) {	
+//				getSliceStats(baseProj,proPath,projectName,bugID,traceTime);
+//			}
 //			System.exit(0);
 	}
 	

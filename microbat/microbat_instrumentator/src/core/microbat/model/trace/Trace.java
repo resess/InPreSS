@@ -187,7 +187,7 @@ public class Trace {
 					}
 				}
 			}
-			
+			System.out.println("heeloo");
 			if(node.isBranch()){
 				controlDominator = node;
 			}

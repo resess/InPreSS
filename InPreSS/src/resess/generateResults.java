@@ -47,7 +47,7 @@ public class generateResults {
 	public void generateResult(String basePath, String projectName, String bugID, String proPath, String buggyPath, String fixPath, 
 			boolean isReuse, boolean useSliceBreaker,
 			boolean enableRandom, int breakLimit, boolean requireVisualization, 
-			boolean allowMultiThread, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual, boolean debug) {
+			boolean allowMultiThread, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual, boolean debug, String tool2Run) {
 		List<TestCase> tcList;
 		TestCase workingTC = null;
 		try {
@@ -60,7 +60,7 @@ public class generateResults {
 				workingTC = tc;				 
 				analyzeTestCaseResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, isReuse, allowMultiThread,tc, 
 						config, requireVisualization, true, useSliceBreaker, enableRandom, breakLimit, 
-						includedClassNames, excludedClassNames, eraseorDual,debug);		
+						includedClassNames, excludedClassNames, eraseorDual,debug, tool2Run);		
 			    System.exit(0);
 			}
 
@@ -73,7 +73,7 @@ public class generateResults {
 			boolean isReuse, boolean allowMultiThread, 
 			TestCase tc, Defects4jProjectConfig config, boolean requireVisualization, 
 			boolean isRunInTestCaseMode, boolean useSliceBreaker, boolean enableRandom, int breakLimit, List<String> includedClassNames, 
-			List<String> excludedClassNames, String eraseorDual,boolean debug) throws Exception {
+			List<String> excludedClassNames, String eraseorDual,boolean debug, String tool2Run) throws Exception {
 		TraceCollector0 newCollector = new TraceCollector0(true);
 		TraceCollector0 oldCollector = new TraceCollector0(false);
 
@@ -182,18 +182,24 @@ public class generateResults {
 		System.out.println("#################################");
 		Simulator simulator = new Simulator(useSliceBreaker, enableRandom, breakLimit);
 		simulator.prepare(newTrace, oldTrace, PairList, diffMatcher);//parents in getObservedFault
-		//System.out.println(simulator.getObservedFault());
+//		System.out.println(simulator.getObservedFault());
 		TraceNode observedFaultNode = simulator.getObservedFault();
 		
 		
 		System.out.println("###############Dual slicing##################");
 		if (eraseorDual.equals("S")){
 			dualSlicingWithConfigS configS = new dualSlicingWithConfigS();
-			configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
+			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
+				configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+			else
+				configS.corex(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
 		}
 		else if (eraseorDual.equals("E")){
 			dualSlicingWithConfigE configE = new dualSlicingWithConfigE();
-			configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
+				configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+			else
+				configE.corex(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
 		}
 		
 		return;

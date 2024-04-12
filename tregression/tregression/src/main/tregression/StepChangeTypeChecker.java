@@ -115,7 +115,8 @@ public class StepChangeTypeChecker {
 //		}
 		
 		boolean isSourceDiff = matcher.checkSourceDiff(step.getBreakPoint(), isOnNewTrace);
-	
+//	    System.out.println(isSourceDiff);
+	    
 		if (matchedStep == null ) {
 			if(isSourceDiff) {			
 				return new StepChangeType(StepChangeType.SRCCTL, matchedStep);
@@ -128,7 +129,12 @@ public class StepChangeTypeChecker {
 		else{
 			List<Pair<VarValue, VarValue>> wrongVariableList = checkWrongVariable(isOnNewTrace, step, matchedStep, pairList, matcher);
 			List<Pair<VarValue, VarValue>> DefWrongVariableList = checkDefWrongVariable(isOnNewTrace, step, matchedStep, pairList, matcher);
-			
+//			System.out.println(step.getWrittenVariables());
+			if(step.getWrittenVariables().size()==0) {
+				if(isSourceDiff) {		
+					return new StepChangeType(StepChangeType.SRCDAT, matchedStep, wrongVariableList);
+				}
+			}
 			if(wrongVariableList.isEmpty() && DefWrongVariableList.isEmpty()){
 			
 				return new StepChangeType(StepChangeType.IDT, matchedStep);
