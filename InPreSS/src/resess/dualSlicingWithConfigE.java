@@ -5103,259 +5103,263 @@ private int CalculateWastedEffort(List<TraceNode> visited, List<TraceNode> retai
 			System.out.println("Final nodes in old " + old_kept);
 			System.out.println("Final nodes in new " + new_kept);
 /////////////////////////////////////Now 3)add edges  ///////////////////////////////////////////////
-			HashMap<String, List<String>> old_functionsVars = new HashMap<>();//keep the mapping between the _Func(vars) and list of vars
-			HashMap<String, List<String>> new_functionsVars = new HashMap<>();
-			HashMap<String, String> old_functionsDef = new HashMap<>();//keep the mapping between the Var = _Func(vars) and Var
-			HashMap<String, String> new_functionsDef = new HashMap<>();
-			for(int i=old_kept.size()-1;i>=0; i--){
-				TraceNode step = old_kept.get(i);
-				old_corex_edges.put(step,null);
-				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-				if(changeType.getType()==StepChangeType.DAT||changeType.getType()==StepChangeType.IDT) {
-					if(!old_data_node_function.containsKey(step)) {
-						TraceNode matchedStep = changeType.getMatchingStep();	
-						for (VarValue var: step.getReadVariables()) {
-							List<Pair<Integer, String>> vars = old_data_node_function.get(step);
-							if (vars==null)
-								vars = new ArrayList<>();
-							Pair<Integer, String> pair = new Pair(index,var.getVarName());
-							vars.add(pair);
-							old_data_node_function.put(step, vars);
-							new_data_node_function.put(matchedStep, vars);
-							index = index + 1;
+			boolean save_result = false;
+			if(save_result) {
+				HashMap<String, List<String>> old_functionsVars = new HashMap<>();//keep the mapping between the _Func(vars) and list of vars
+				HashMap<String, List<String>> new_functionsVars = new HashMap<>();
+				HashMap<String, String> old_functionsDef = new HashMap<>();//keep the mapping between the Var = _Func(vars) and Var
+				HashMap<String, String> new_functionsDef = new HashMap<>();
+				for(int i=old_kept.size()-1;i>=0; i--){
+					TraceNode step = old_kept.get(i);
+					old_corex_edges.put(step,null);
+					StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
+	//				System.out.println("Step on old is: " + step + "the type is" + changeType.getType());
+					if(changeType.getType()==StepChangeType.DAT||changeType.getType()==StepChangeType.IDT || changeType.getType()==StepChangeType.SRCDAT) {
+						if(!old_data_node_function.containsKey(step)) {
+							TraceNode matchedStep = changeType.getMatchingStep();	
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								old_data_node_function.put(step, vars);
+								new_data_node_function.put(matchedStep, vars);
+								index = index + 1;
+							}
+	//						old_data_node_function.put(step, index);	
+	//						new_data_node_function.put(matchedStep, index);
+	//						index = index + 1;									
 						}
-//						old_data_node_function.put(step, index);	
-//						new_data_node_function.put(matchedStep, index);
-//						index = index + 1;									
 					}
-				}
-				else if (changeType.getType()==StepChangeType.CTL){
-					if(!old_ctl_node_function.containsKey(step)) {
-						for (VarValue var: step.getReadVariables()) {
-							List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
-							if (vars==null)
-								vars = new ArrayList<>();
-							Pair<Integer, String> pair = new Pair(index,var.getVarName());
-							vars.add(pair);
-							old_ctl_node_function.put(step, vars);
-							index = index + 1;
+					else if (changeType.getType()==StepChangeType.CTL || changeType.getType()==StepChangeType.SRCCTL){
+						if(!old_ctl_node_function.containsKey(step)) {
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								old_ctl_node_function.put(step, vars);
+								index = index + 1;
+							}
+	//						old_ctl_node_function.put(step, index);	
+	//						index = index + 1;			
 						}
-//						old_ctl_node_function.put(step, index);	
-//						index = index + 1;			
-					}
-				}			
-				getEdges(step,old_kept,old_corex_edges,old_data_map,old_ctl_map,old_data_node_function,old_ctl_node_function,changeType,old_functionsVars,old_functionsDef);					
-			}
-			for(int i=new_kept.size()-1;i>=0; i--){
-				TraceNode step = new_kept.get(i);
-				new_corex_edges.put(step,null);
-				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-				if(changeType.getType()==StepChangeType.DAT||changeType.getType()==StepChangeType.IDT) {
-					if(!new_data_node_function.containsKey(step)) {
-						TraceNode matchedStep = changeType.getMatchingStep();	
-						for (VarValue var: step.getReadVariables()) {
-							List<Pair<Integer, String>> vars = new_data_node_function.get(step);
-							if (vars==null)
-								vars = new ArrayList<>();
-							Pair<Integer, String> pair = new Pair(index,var.getVarName());
-							vars.add(pair);
-							new_data_node_function.put(step, vars);
-							old_data_node_function.put(matchedStep, vars);
-							index = index + 1;
+					}			
+					getEdges(step,old_kept,old_corex_edges,old_data_map,old_ctl_map,old_data_node_function,old_ctl_node_function,changeType,old_functionsVars,old_functionsDef);					
+				}
+				for(int i=new_kept.size()-1;i>=0; i--){
+					TraceNode step = new_kept.get(i);
+					new_corex_edges.put(step,null);
+					StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
+	//				System.out.println("Step on new is: " + step + "the type is" + changeType.getType());
+					if(changeType.getType()==StepChangeType.DAT||changeType.getType()==StepChangeType.IDT || changeType.getType()==StepChangeType.SRCDAT) {
+						if(!new_data_node_function.containsKey(step)) {
+							TraceNode matchedStep = changeType.getMatchingStep();	
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								new_data_node_function.put(step, vars);
+								old_data_node_function.put(matchedStep, vars);
+								index = index + 1;
+							}
+	//						new_data_node_function.put(step, index);	
+	//						old_data_node_function.put(matchedStep, index);
+	//						index = index + 1;									
 						}
-//						new_data_node_function.put(step, index);	
-//						old_data_node_function.put(matchedStep, index);
-//						index = index + 1;									
 					}
-				}
-				else if (changeType.getType()==StepChangeType.CTL){
-					if(!new_ctl_node_function.containsKey(step)) {
-						for (VarValue var: step.getReadVariables()) {
-							List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
-							if (vars==null)
-								vars = new ArrayList<>();
-							Pair<Integer, String> pair = new Pair(index,var.getVarName());
-							vars.add(pair);
-							new_ctl_node_function.put(step, vars);
-							index = index + 1;
+					else if (changeType.getType()==StepChangeType.CTL || changeType.getType()==StepChangeType.SRCCTL){
+						if(!new_ctl_node_function.containsKey(step)) {
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								new_ctl_node_function.put(step, vars);
+								index = index + 1;
+							}
+	//						new_ctl_node_function.put(step, index);	
+	//						index = index + 1;			
 						}
-//						new_ctl_node_function.put(step, index);	
-//						index = index + 1;			
 					}
+					getEdges(step,new_kept,new_corex_edges,new_data_map,new_ctl_map,new_data_node_function,new_ctl_node_function,changeType,new_functionsVars,new_functionsDef);					
 				}
-				getEdges(step,new_kept,new_corex_edges,new_data_map,new_ctl_map,new_data_node_function,new_ctl_node_function,changeType,new_functionsVars,new_functionsDef);					
-			}
-
-			System.out.println("Final edges in old are " + old_corex_edges);
-			System.out.println("Final edges in new are  " + new_corex_edges);
-////////////////////////saving/////////////////////
-			Collections.sort(old_kept, new TraceNodeOrderComparator());
-			Collections.sort(new_kept, new TraceNodeOrderComparator());
-					
-			try {
-			PrintWriter fileWriter = new PrintWriter(proPath + "/results/old/CoReX.txt", "UTF-8");
-			PrintWriter writer = new PrintWriter(proPath+"/results/Explainations.gv", "UTF-8");
-			writer.println("digraph dualGraph {");
-			writer.println("rankdir = BT;");
-			writer.println("splines=ortho;");
-			writer.println("subgraph cluster0 {");
-			writer.println("color=black;");
-			writer.println("label = \"old slice\";");
-			for(int i=0;i<=old_kept.size()-1;i++){
-				TraceNode step = old_kept.get(i);
-				boolean NotAssignemnt = false;
-//				System.out.println("step is " + step + "written is " + step.getWrittenVariables());
-				if (step.getWrittenVariables().size()!=0) {
-					if(!Pattern.compile(step.getWrittenVariables().get(0).getVarName()+ ".*=").matcher(getSourceCode(step, false, matcher)).find()) {
-//						System.out.println("is not an assignement");
-						NotAssignemnt= true;
-					}
-				}
-				if(NotAssignemnt)
-					fileWriter.println(getSourceCode(step, false, matcher) + " " + step.getWrittenVariables().toString());
-				else
-					fileWriter.println(getSourceCode(step, false, matcher));
-				String fixNode = step.toString();
-				String Type = "";
-				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);		
-				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {					
-					Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";																			
-				}	
-				else if (changeType.getType()==StepChangeType.IDT) {					
-					Type= "color=green fillcolor=green shape=box style=filled fontsize=10";																			
-				}					
-				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {					
-					Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";																																						
-				}
-				else {//retained set 				
-					if (changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,old_visited)) 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
-					else 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";									
-				}	
-				if(NotAssignemnt)
-					writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+ " " +step.getWrittenVariables().toString()+"\"];");	
-				else
-					writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+"\"];");	
-			}
-			writer.println("}");	
-			fileWriter.close();
-			/////////////////////////////////////////////////////////////
-			////////////////////////add nodes of new/////////////////////
-			fileWriter = new PrintWriter(proPath + "/results/new/CoReX.txt", "UTF-8");		
-			writer.println("subgraph cluster1 {");
-			writer.println("color=black;");
-			writer.println("label = \"new slice\";");
-			for(int i=0;i<=new_kept.size()-1;i++){
-				TraceNode step = new_kept.get(i);
-				boolean NotAssignemnt = false;
-//				System.out.println("step is " + step + "written is " + step.getWrittenVariables());
-				if (step.getWrittenVariables().size()!=0) {
-					if(!Pattern.compile(step.getWrittenVariables().get(0).getVarName()+ ".*=").matcher(getSourceCode(step, true, matcher)).find()) {
-//						System.out.println("is not an assignement");
-						NotAssignemnt= true;
-					}
-				}
-				if(NotAssignemnt)
-					fileWriter.println(getSourceCode(step, true, matcher) + " " + step.getWrittenVariables().toString());
-				else
-					fileWriter.println(getSourceCode(step, true, matcher));
-				String fixNode = step.toString();
-				String Type = "";
-				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);		
-				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,new_visited)) {					
-					Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";																			
-				}	
-				else if (changeType.getType()==StepChangeType.IDT) {					
-					Type= "color=green fillcolor=green shape=box style=filled fontsize=10";																			
-				}	
-				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,new_visited)) {					
-					Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";																																						
-				}
-				else {//retained set 				
-					if (changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
-					else 
-						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";									
-				}	
-				if(NotAssignemnt)
-					writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+ " " +step.getWrittenVariables().toString()+"\"];");	
-				else
-					writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+"\"];");	
-			}
-			writer.println("}");	
-			fileWriter.close();
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////add control flow edges////////////////////////////////////////////////////////////////////////////////////////////				
-			for(int i=0;i<old_kept.size(); i++) {
-				if(i!=old_kept.size()-1) {
-					String step = old_kept.get(i).toString();
-					String BeforeStep = old_kept.get(i+1).toString();
-					writer.println("\"OldNode: "+BeforeStep +"\" " + "->" + "\"OldNode: "+step +"\" [style=invis];");
-				}
-			} 
-			for(int i=0;i<new_kept.size(); i++) {
-				if(i!=new_kept.size()-1) {
-					String step = new_kept.get(i).toString();
-					String BeforeStep = new_kept.get(i+1).toString();
-					writer.println("\"NewNode: "+BeforeStep +"\" " + "->" + "\"NewNode: "+step +"\" [style=invis] ;");
-				} 
-			}
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			/////////////////////////add alignment edges between two traces//////////////////////////////////////////////////////////////////////////////
-//			for(int i=0;i<old_kept.size(); i++) {
-//				TraceNode step = old_kept.get(i);				
-//				StepChangeType changeType = typeChecker.getType(step, false, pairList, matcher);
-//				TraceNode matchedStep = changeType.getMatchingStep();
-//				if(new_kept.contains(matchedStep)) {										
-//					writer.println("\"OldNode: "+step.toString() +"\" " + "->" + "\"NewNode: "+matchedStep.toString() +"\" [color=grey55 style=dotted arrowhead=none constraint=true];");
-//				}
-//			}
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			/////////////////////////add dependency edges////////////////
-			for(int i=0;i<old_kept.size(); i++) {
-				TraceNode step = old_kept.get(i);
-				if(old_corex_edges.keySet().contains(step)) 
-					if(old_corex_edges.get(step)!=null)
-						for(Pair<TraceNode, String> dep: old_corex_edges.get(step)) 
-							if(old_kept.contains(dep.first())) 		
-								if (dep.second().contains("CONTROL")) {
-									StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-									if(changeType.getType()==StepChangeType.CTL)//only these ctl edges are important
-										writer.println("\"OldNode: "+step.toString() +"\" " + "-> " + "\"OldNode: "+dep.first().toString() +"\" [color=black style=dashed arrowhead=normal constraint=false];");//connect control nodes to west	
-								}
-								else
-									writer.println("\"OldNode: "+step.toString() +"\" " + "-> " + "\"OldNode: "+dep.first().toString() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");//connect data nodes to east																		
-			}
-			
-			for(int i=0;i<new_kept.size(); i++) {
-				TraceNode step = new_kept.get(i);
-				if(new_corex_edges.keySet().contains(step)) 
-					if(new_corex_edges.get(step)!=null)
-						for(Pair<TraceNode, String> dep: new_corex_edges.get(step)) 
-							if(new_kept.contains(dep.first())) 		
-								if (dep.second().contains("CONTROL")) {
-									StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-									if(changeType.getType()==StepChangeType.CTL)//only these ctl edges are important
-									writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep.first().toString() +"\" [color=black style=dashed arrowhead=normal constraint=false];");//connect control nodes to west	
-								}
-								else
-									writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep.first().toString() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");//connect data nodes to east																		
-			}
-			/////////////////////////////////////////////////////////////////////
-			writer.println("}");
-			writer.close();
-			
-		} catch (FileNotFoundException e) {                                        
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
 	
+				System.out.println("Final edges in old are " + old_corex_edges);
+				System.out.println("Final edges in new are  " + new_corex_edges);
+	////////////////////////saving/////////////////////
+				Collections.sort(old_kept, new TraceNodeOrderComparator());
+				Collections.sort(new_kept, new TraceNodeOrderComparator());
+						
+				try {
+				PrintWriter fileWriter = new PrintWriter(proPath + "/results/old/CoReX.txt", "UTF-8");
+				PrintWriter writer = new PrintWriter(proPath+"/results/Explainations.gv", "UTF-8");
+				writer.println("digraph dualGraph {");
+				writer.println("rankdir = BT;");
+				writer.println("splines=ortho;");
+				writer.println("subgraph cluster0 {");
+				writer.println("color=black;");
+				writer.println("label = \"old slice\";");
+				for(int i=0;i<=old_kept.size()-1;i++){
+					TraceNode step = old_kept.get(i);
+					boolean NotAssignemnt = false;
+	//				System.out.println("step is " + step + "written is " + step.getWrittenVariables());
+					if (step.getWrittenVariables().size()!=0) {
+						if(!Pattern.compile(step.getWrittenVariables().get(0).getVarName()+ ".*=").matcher(getSourceCode(step, false, matcher)).find()) {
+	//						System.out.println("is not an assignement");
+							NotAssignemnt= true;
+						}
+					}
+					if(NotAssignemnt)
+						fileWriter.println(getSourceCode(step, false, matcher) + " " + step.getWrittenVariables().toString());
+					else
+						fileWriter.println(getSourceCode(step, false, matcher));
+					String fixNode = step.toString();
+					String Type = "";
+					StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);		
+					if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {					
+						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";																			
+					}	
+					else if (changeType.getType()==StepChangeType.IDT) {					
+						Type= "color=green fillcolor=green shape=box style=filled fontsize=10";																			
+					}					
+					else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {					
+						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";																																						
+					}
+					else {//retained set 				
+						if (changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,old_visited)) 
+							Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
+						else 
+							Type = "color=red fillcolor=white shape=box style=filled fontsize=10";									
+					}	
+					if(NotAssignemnt)
+						writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+ " " +step.getWrittenVariables().toString()+"\"];");	
+					else
+						writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+"\"];");	
+				}
+				writer.println("}");	
+				fileWriter.close();
+				/////////////////////////////////////////////////////////////
+				////////////////////////add nodes of new/////////////////////
+				fileWriter = new PrintWriter(proPath + "/results/new/CoReX.txt", "UTF-8");		
+				writer.println("subgraph cluster1 {");
+				writer.println("color=black;");
+				writer.println("label = \"new slice\";");
+				for(int i=0;i<=new_kept.size()-1;i++){
+					TraceNode step = new_kept.get(i);
+					boolean NotAssignemnt = false;
+	//				System.out.println("step is " + step + "written is " + step.getWrittenVariables());
+					if (step.getWrittenVariables().size()!=0) {
+						if(!Pattern.compile(step.getWrittenVariables().get(0).getVarName()+ ".*=").matcher(getSourceCode(step, true, matcher)).find()) {
+	//						System.out.println("is not an assignement");
+							NotAssignemnt= true;
+						}
+					}
+					if(NotAssignemnt)
+						fileWriter.println(getSourceCode(step, true, matcher) + " " + step.getWrittenVariables().toString());
+					else
+						fileWriter.println(getSourceCode(step, true, matcher));
+					String fixNode = step.toString();
+					String Type = "";
+					StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);		
+					if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,new_visited)) {					
+						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";																			
+					}	
+					else if (changeType.getType()==StepChangeType.IDT) {					
+						Type= "color=green fillcolor=green shape=box style=filled fontsize=10";																			
+					}	
+					else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,new_visited)) {					
+						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";																																						
+					}
+					else {//retained set 				
+						if (changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) 
+							Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
+						else 
+							Type = "color=red fillcolor=white shape=box style=filled fontsize=10";									
+					}	
+					if(NotAssignemnt)
+						writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+ " " +step.getWrittenVariables().toString()+"\"];");	
+					else
+						writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+"\"];");	
+				}
+				writer.println("}");	
+				fileWriter.close();
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//////////////////////////////add control flow edges////////////////////////////////////////////////////////////////////////////////////////////				
+				for(int i=0;i<old_kept.size(); i++) {
+					if(i!=old_kept.size()-1) {
+						String step = old_kept.get(i).toString();
+						String BeforeStep = old_kept.get(i+1).toString();
+						writer.println("\"OldNode: "+BeforeStep +"\" " + "->" + "\"OldNode: "+step +"\" [style=invis];");
+					}
+				} 
+				for(int i=0;i<new_kept.size(); i++) {
+					if(i!=new_kept.size()-1) {
+						String step = new_kept.get(i).toString();
+						String BeforeStep = new_kept.get(i+1).toString();
+						writer.println("\"NewNode: "+BeforeStep +"\" " + "->" + "\"NewNode: "+step +"\" [style=invis] ;");
+					} 
+				}
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				/////////////////////////add alignment edges between two traces//////////////////////////////////////////////////////////////////////////////
+	//			for(int i=0;i<old_kept.size(); i++) {
+	//				TraceNode step = old_kept.get(i);				
+	//				StepChangeType changeType = typeChecker.getType(step, false, pairList, matcher);
+	//				TraceNode matchedStep = changeType.getMatchingStep();
+	//				if(new_kept.contains(matchedStep)) {										
+	//					writer.println("\"OldNode: "+step.toString() +"\" " + "->" + "\"NewNode: "+matchedStep.toString() +"\" [color=grey55 style=dotted arrowhead=none constraint=true];");
+	//				}
+	//			}
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				/////////////////////////add dependency edges////////////////
+				for(int i=0;i<old_kept.size(); i++) {
+					TraceNode step = old_kept.get(i);
+					if(old_corex_edges.keySet().contains(step)) 
+						if(old_corex_edges.get(step)!=null)
+							for(Pair<TraceNode, String> dep: old_corex_edges.get(step)) 
+								if(old_kept.contains(dep.first())) 		
+									if (dep.second().contains("CONTROL")) {
+										StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
+										if(changeType.getType()==StepChangeType.CTL)//only these ctl edges are important
+											writer.println("\"OldNode: "+step.toString() +"\" " + "-> " + "\"OldNode: "+dep.first().toString() +"\" [color=black style=dashed arrowhead=normal constraint=false];");//connect control nodes to west	
+									}
+									else
+										writer.println("\"OldNode: "+step.toString() +"\" " + "-> " + "\"OldNode: "+dep.first().toString() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");//connect data nodes to east																		
+				}
+				
+				for(int i=0;i<new_kept.size(); i++) {
+					TraceNode step = new_kept.get(i);
+					if(new_corex_edges.keySet().contains(step)) 
+						if(new_corex_edges.get(step)!=null)
+							for(Pair<TraceNode, String> dep: new_corex_edges.get(step)) 
+								if(new_kept.contains(dep.first())) 		
+									if (dep.second().contains("CONTROL")) {
+										StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
+										if(changeType.getType()==StepChangeType.CTL)//only these ctl edges are important
+										writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep.first().toString() +"\" [color=black style=dashed arrowhead=normal constraint=false];");//connect control nodes to west	
+									}
+									else
+										writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep.first().toString() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");//connect data nodes to east																		
+				}
+				/////////////////////////////////////////////////////////////////////
+				writer.println("}");
+				writer.close();
+				
+			} catch (FileNotFoundException e) {                                        
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+		}// end of save_result
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////

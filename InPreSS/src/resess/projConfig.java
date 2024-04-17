@@ -58,43 +58,57 @@ public class projConfig extends Defects4jProjectConfig{
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "E";
 //				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+				if(config.configFile.contentEquals("S"))
+					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==2){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
+//				config.configFile = "E";
 				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				if(config.configFile.contentEquals("S"))
+//					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==3){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
+//				config.configFile = "E";
 				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				if(config.configFile.contentEquals("S"))
+//					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==4){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
+//				config.configFile = "E";
 				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				if(config.configFile.contentEquals("S"))
+//					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==5){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "E";
 //				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+				if(config.configFile.contentEquals("S"))
+					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==6){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
+//				config.configFile = "E";
 				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				if(config.configFile.contentEquals("S"))
+//					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==7){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
+//				config.configFile = "E";
 				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				if(config.configFile.contentEquals("S"))
+//					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==8){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
+//				config.configFile = "E";
 				config.configFile = "S";
-				getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				if(config.configFile.contentEquals("S"))
+//					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==9){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
