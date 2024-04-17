@@ -266,26 +266,31 @@ public class Trace {
 		
 		String varID = Variable.truncateSimpleID(writtenVar.getVarID());
 		String headID = Variable.truncateSimpleID(writtenVar.getAliasVarID());
-		
-		for(int i=startNode.getOrder()+1; i>=this.getExecutionList().size(); i++) {
+//		System.out.println(startNode.getOrder());
+//		System.out.println(this.getExecutionList().size());
+		for(int i=startNode.getOrder()+1; i<=this.getExecutionList().size(); i++) {
 			TraceNode node = this.getTraceNode(i);
+//			System.out.println(node);
 			for(VarValue readVar: node.getReadVariables()) {
-				
-				String rVarID = Variable.truncateSimpleID(readVar.getVarID());
-				String rHeadID = Variable.truncateSimpleID(readVar.getAliasVarID());
-				
-				if(rVarID != null && rVarID.equals(varID)) {
-					consumers.add(node);						
-				}
-				
-				if(rHeadID != null && rHeadID.equals(headID)) {
-					consumers.add(node);
-				}
-				
-				VarValue childValue = readVar.findVarValue(varID, headID);
-				if(childValue != null) {
-					consumers.add(node);
-				}
+				TraceNode dataDom = this.findDataDependency(node, readVar);
+				if(dataDom!=null)
+					if(dataDom.equals(startNode))
+						consumers.add(node);
+//				String rVarID = Variable.truncateSimpleID(readVar.getVarID());
+//				String rHeadID = Variable.truncateSimpleID(readVar.getAliasVarID());
+//				
+//				if(rVarID != null && rVarID.equals(varID)) {
+//					consumers.add(node);						
+//				}
+//				
+//				if(rHeadID != null && rHeadID.equals(headID)) {
+//					consumers.add(node);
+//				}
+//				
+//				VarValue childValue = readVar.findVarValue(varID, headID);
+//				if(childValue != null) {
+//					consumers.add(node);
+//				}
 				
 			}
 		}

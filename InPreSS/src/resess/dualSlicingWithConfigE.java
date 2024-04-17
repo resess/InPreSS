@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -66,9 +67,9 @@ public class dualSlicingWithConfigE {
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////	
 	private TraceNode findLatestControlDifferent(TraceNode currentNode, TraceNode controlDom, 
-			StepChangeTypeChecker checker, PairList pairList, DiffMatcher matcher) {
+			StepChangeTypeChecker checker, PairList pairList, DiffMatcher matcher,boolean isNew) {
 		TraceNode n = currentNode.getStepInPrevious();
-		StepChangeType t = checker.getType(n, true, pairList, matcher);
+		StepChangeType t = checker.getType(n, isNew, pairList, matcher);
 		while(t.getType()==StepChangeType.CTL && n.getOrder()>controlDom.getOrder()){
 			TraceNode dom = n.getInvocationMethodOrDominator();
 			if(dom.getMethodSign().equals(n.getMethodSign())){
@@ -76,7 +77,7 @@ public class dualSlicingWithConfigE {
 			}
 			
 			n = n.getStepInPrevious();
-			t = checker.getType(n, true, pairList, matcher);
+			t = checker.getType(n, isNew, pairList, matcher);
 		}
 		return controlDom;
 	}
@@ -963,15 +964,15 @@ public class dualSlicingWithConfigE {
 		//////////////////add control node//////////////////
 		TraceNode controlDom = step.getInvocationMethodOrDominator();
 //		step.constructControlDomianceRelation();
-//		System.out.println("debug: control dep node (dominator): " + controlDom);	
+//		System.out.println("debug: control dep node (dominator): " + controlDom);
 		if(step.insideException() || getSourceCode(step, isNew, matcher).contains("throw")){
 			controlDom = step.getStepInPrevious();
 			//System.out.println("debug: control dep node (exception): " + controlDom);
 		}
-		else if(controlDom!=null && !controlDom.isConditional() && controlDom.isBranch() && !controlDom.equals(step.getInvocationParent())){					
+		else if(controlDom!=null && !controlDom.isConditional() && controlDom.isBranch() && !controlDom.equals(step.getInvocationParent())){
 			StepChangeType t = typeChecker.getType(controlDom, isNew, pairList, matcher);
 			if(t.getType()==StepChangeType.IDT){
-				controlDom = findLatestControlDifferent(step, controlDom, typeChecker, pairList, matcher);						
+				controlDom = findLatestControlDifferent(step, controlDom, typeChecker, pairList, matcher,isNew);						
 			}
 		}						
 		if(controlDom==null){
@@ -983,12 +984,43 @@ public class dualSlicingWithConfigE {
 			}
 		}   
 		//System.out.println("debug: control dependency node: " + controlDom);
+		
+		//the below if is a hack to fix the wrong control dependency in ERASE
+		if(changeType.getType()==StepChangeType.CTL) {
+//			System.out.println("step is control diff: " + step);
+			if(controlDom.isConditional()||controlDom.isBranch()) {
+//				System.out.println("the step control is branch");
+				TraceNode latestDataDiffCondition = findTheLatestDataDiffCondition(step,trace,typeChecker,isNew, pairList, matcher);
+//				System.out.println("latest diff"+latestDataDiffCondition);
+				if(!controlDom.equals(latestDataDiffCondition))
+					controlDom = latestDataDiffCondition;
+			}
+		}
+			
 		if(controlDom!=null) {
 			Pair<TraceNode, String> keyPair = new Pair(controlDom, "null");
 			deps.put(keyPair, "control");
 		}
 		cashDeps.put(step, deps);
 		return deps;
+	}
+	private TraceNode findTheLatestDataDiffCondition(TraceNode step, Trace trace, StepChangeTypeChecker typeChecker,
+			boolean isNew, PairList pairList, DiffMatcher matcher) {
+		List<TraceNode> nodes = trace.getExecutionList();
+		Collections.sort(nodes, new TraceNodeOrderComparator());
+		boolean passed = false;
+		for(int i =nodes.size()-1;i>=0;i--) {
+//			System.out.println("debug: step: " + nodes.get(i));
+		    if(nodes.get(i).equals(step))
+		    	passed = true;
+		    if(passed) {
+		    	StepChangeType t = typeChecker.getType(nodes.get(i), isNew, pairList, matcher);
+				if((t.getType()==StepChangeType.DAT || t.getType()==StepChangeType.SRCDAT) && (nodes.get(i).isConditional() || nodes.get(i).isBranch())){
+					return nodes.get(i);					
+				}
+		    }
+		}
+		return step.getControlDominator();
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1379,10 +1411,10 @@ public class dualSlicingWithConfigE {
 			CTLBlockID += 1;
 		}
 //		System.out.println("#################after paralizing#################"); 
-		System.out.println("The # of data block in old " + oldDataBlockNodes);
-		System.out.println("The # of data block in new " + newDataBlockNodes);
-		System.out.println("The # of ctl block in old " + oldCtlBlockNodes);
-		System.out.println("The # of ctl block in new " + newCtlBlockNodes);
+//		System.out.println("The # of data block in old " + oldDataBlockNodes);
+//		System.out.println("The # of data block in new " + newDataBlockNodes);
+//		System.out.println("The # of ctl block in old " + oldCtlBlockNodes);
+//		System.out.println("The # of ctl block in new " + newCtlBlockNodes);
 	
 		////////////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3092,20 +3124,17 @@ public class dualSlicingWithConfigE {
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
-	public void corex(String basePath, String projectName, String bugID, TestCase tc, boolean b, String proPath,
-			TraceNode observedFaultNode, Trace newTrace, Trace oldTrace, PairList pairList, ChangeExtractor diffMatcher,
-			int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> realRootCaseList,
-			boolean debug) throws IOException {
-		
+	public void InPreSS(String basePath, String projectName, String bugID, TestCase tc,
+			boolean slicer4J, String proPath, TraceNode observedFaultNode, Trace newTrace, Trace oldTrace, PairList PairList, 
+			DiffMatcher matcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime,  List<RootCauseNode> rootList,boolean debug, List<TraceNode> new_visited, List<TraceNode> old_visited, List<TraceNode> new_kept, List<TraceNode> old_kept ) throws IOException {
+
 		List<TraceNode> new_workList = new ArrayList<>();
-		List<TraceNode> new_visited = new ArrayList<>();
 		HashMap<TraceNode, List<Pair<TraceNode, String>>> new_data_map = new HashMap<>();
 		HashMap<TraceNode, List<TraceNode>> new_ctl_map = new HashMap<>();
 
 		List<TraceNode> old_workList = new ArrayList<>();
-		List<TraceNode> old_visited = new ArrayList<>();
-		HashMap<TraceNode, List<Pair<TraceNode, String>>> old_data_map = new HashMap<>(); //(12, [(13,g), (14,f)])
-		HashMap<TraceNode, List<TraceNode>> old_ctl_map = new HashMap<>();//(12, [13, 14])
+		HashMap<TraceNode, List<Pair<TraceNode, String>>> old_data_map = new HashMap<>();
+		HashMap<TraceNode, List<TraceNode>> old_ctl_map = new HashMap<>();
 		
 
 		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> old_CashDeps = new HashMap<>();
@@ -3113,10 +3142,14 @@ public class dualSlicingWithConfigE {
 		
 		StepChangeTypeChecker typeChecker = new StepChangeTypeChecker(newTrace, oldTrace);
 		
+		//to get statistics about slice 
+//		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> slice_CashDeps = new HashMap<>();
+//		getSliceStats(basePath, projectName,  bugID,PairList,slice_CashDeps, observedFaultNode, newTrace,typeChecker,matcher,proPath);
+		
 		new_visited.add(observedFaultNode);
 		new_workList.add(observedFaultNode);
 		System.out.println("#############################");
-		System.out.println("Starting Working list");
+		System.out.println("Starting Working list on Dual and InPreSS");
 		
 
 		Long dual_start_time = System.currentTimeMillis();
@@ -3124,22 +3157,22 @@ public class dualSlicingWithConfigE {
 			while(!new_workList.isEmpty()) {
 //				System.out.println("#############################");
 				TraceNode step = new_workList.remove(0);
-			    updateWorklistKeepingIdentical(new_CashDeps, old_CashDeps, step, newTrace, oldTrace, new_visited, new_workList,old_visited,old_workList,true,typeChecker,
-			    		pairList,diffMatcher,new_data_map,new_ctl_map, proPath);				
+			    updateWorklist(new_CashDeps, old_CashDeps, step, newTrace, oldTrace, new_visited, new_workList,old_visited,old_workList,true,typeChecker,
+			    		PairList,matcher,new_data_map,new_ctl_map, proPath);				
 			}
 			////////////////////////////////////////////////////////////////////////////////////////
 			while(!old_workList.isEmpty()) {
 //				System.out.println("#############################");
 				TraceNode step = old_workList.remove(0);
-				updateWorklistKeepingIdentical(old_CashDeps, new_CashDeps, step, oldTrace, newTrace, old_visited,old_workList,new_visited, new_workList,false,typeChecker,
-						pairList,diffMatcher,old_data_map,old_ctl_map, proPath);
+				updateWorklist(old_CashDeps, new_CashDeps, step, oldTrace, newTrace, old_visited,old_workList,new_visited, new_workList,false,typeChecker,
+						PairList,matcher,old_data_map,old_ctl_map, proPath);
 			}			
 		}
 		/// ################################################################
 		/// ################################################################
 		Long dual_finish_time = System.currentTimeMillis();				
 		int dual_Time = (int) (dual_finish_time - dual_start_time);
-				
+		
 		for(int i=old_visited.size()-1;i>=0; i--){
 			TraceNode step = old_visited.get(i);
 			if(step==null)
@@ -3151,8 +3184,8 @@ public class dualSlicingWithConfigE {
 				new_visited.remove(i);
 		}	
 		System.out.println("##########Finish Dual Slciing###################");
-//		printDualSliceResults(old_visited, false, proPath, diffMatcher);
-//		printDualSliceResults(new_visited,true, proPath,diffMatcher);
+		printDualSliceResults(old_visited, false, proPath, matcher);
+		printDualSliceResults(new_visited,true, proPath,matcher);
 		/// ################################################################
 		/// ################################################################
 		HashMap<Integer, Integer> oldChangeChunkInfo = new HashMap<>();
@@ -3161,10 +3194,10 @@ public class dualSlicingWithConfigE {
 		HashMap<Integer, Integer> newTestCaseChunkInfo = new HashMap<>();
 		HashMap<Integer, Integer> oldCommonChunkInfo = new HashMap<>();
 		HashMap<Integer, Integer> newCommonChunkInfo = new HashMap<>();
-//		getChangeChunks(typeChecker, diffMatcher, old_visited,new_visited,oldChangeChunkInfo,newChangeChunkInfo);
+		getChangeChunks(typeChecker, matcher, old_visited,new_visited,oldChangeChunkInfo,newChangeChunkInfo);
 //		getChangeChunks(typeChecker, inPreSSPairList, matcher, old_visited,new_visited,oldChangeChunkInfo,newChangeChunkInfo);
-//		getTestCaseChunks(tc,old_visited,new_visited,oldTestCaseChunkInfo,newTestCaseChunkInfo);
-//		getCommonBlocksChunks(typeChecker, diffMatcher, tc,old_visited,new_visited,oldCommonChunkInfo,newCommonChunkInfo);
+		getTestCaseChunks(tc,old_visited,new_visited,oldTestCaseChunkInfo,newTestCaseChunkInfo);
+		getCommonBlocksChunks(typeChecker, matcher, tc,old_visited,new_visited,oldCommonChunkInfo,newCommonChunkInfo);
 //		getCommonBlocksChunks(typeChecker, inPreSSPairList, matcher, tc,old_visited,new_visited,oldCommonChunkInfo,newCommonChunkInfo);
 //		System.out.println("##############Printing Abstraction to Graph##############");
 //		System.out.println(old_data_map);
@@ -3174,9 +3207,7 @@ public class dualSlicingWithConfigE {
 		HashMap<TraceNode, List<TraceNode>> both_old_ctl_map = old_ctl_map;
 		///################################################################
 		///################################################################
-		System.out.println("##############CoReX ##############");	
-		List<TraceNode> old_kept = new ArrayList<>();
-		List<TraceNode> new_kept = new ArrayList<>();		
+		System.out.println("##############InPress ##############");		
 		List<TraceNode> old_retained = new ArrayList<>();		
 		List<TraceNode> new_retained = new ArrayList<>();
 		List<String> old_kept_sourceCodeLevel = new ArrayList<>();		
@@ -3187,7 +3218,143 @@ public class dualSlicingWithConfigE {
 //		addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained);
 		int oldRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, oldTrace.getExecutionList(),old_visited);
 		int newRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, newTrace.getExecutionList(),new_visited);
+		
+		HashMap<Integer, List<TraceNode>> oldDataBlockNodes = new HashMap<>();
+		HashMap<Integer, List<TraceNode>> newDataBlockNodes = new HashMap<>();
+		HashMap<Integer, List<TraceNode>> oldCtlBlockNodes = new HashMap<>();
+		HashMap<Integer, List<TraceNode>> newCtlBlockNodes = new HashMap<>();
+		long inPreSS_start_time = System.currentTimeMillis();	
+		inPreSSAbstractionCircleOnlySameFunctionsCommonTrianlges(tc, proPath, old_visited,new_visited,typeChecker,PairList, 
+				matcher,both_old_data_map,both_old_ctl_map,both_new_data_map,both_new_ctl_map,old_kept, new_kept, 
+				oldDataBlockNodes, newDataBlockNodes, oldCtlBlockNodes, newCtlBlockNodes, old_retained, new_retained,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
+		long inPreSS_finish_time = System.currentTimeMillis();			
+		int inPreSS_Time = (int) (inPreSS_finish_time - inPreSS_start_time);
+		System.out.println("##############Saving Results##############");	
+		if(debug)
+			PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+		else {
+			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")||projectName.equals("Toy")) {
+				PrintD4JPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+						oldCommonChunkInfo, newCommonChunkInfo,
+						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
+//				PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+//						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+//						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+			}		
+			else 
+				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+				oldCommonChunkInfo, newCommonChunkInfo,
+				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
+			
+		}
+	}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+	public void corex(String basePath, String projectName, String bugID, TestCase tc, boolean b, String proPath,
+			TraceNode observedFaultNode, Trace newTrace, Trace oldTrace, PairList pairList, ChangeExtractor diffMatcher,
+			int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> realRootCaseList,
+			boolean debug) throws IOException {
+		
+		List<TraceNode> old_visited = new ArrayList<>();
+		List<TraceNode> new_visited = new ArrayList<>();
+		List<TraceNode> inpress_old_kept = new ArrayList<>();
+		List<TraceNode> inpress_new_kept = new ArrayList<>();
+		InPreSS(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, pairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,realRootCaseList,debug,new_visited,old_visited,inpress_new_kept,inpress_old_kept);
+		
+		List<TraceNode> new_workList = new ArrayList<>();
+		List<TraceNode> dual_idt_new_visited = new ArrayList<>();
+		HashMap<TraceNode, List<Pair<TraceNode, String>>> new_data_map = new HashMap<>();
+		HashMap<TraceNode, List<TraceNode>> new_ctl_map = new HashMap<>();
+
+		List<TraceNode> old_workList = new ArrayList<>();
+		List<TraceNode> dual_idt_old_visited = new ArrayList<>();
+		HashMap<TraceNode, List<Pair<TraceNode, String>>> old_data_map = new HashMap<>(); //(12, [(13,g), (14,f)])
+		HashMap<TraceNode, List<TraceNode>> old_ctl_map = new HashMap<>();//(12, [13, 14])
+		
+
+		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> old_CashDeps = new HashMap<>();
+		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> new_CashDeps = new HashMap<>();
+		
+		StepChangeTypeChecker typeChecker = new StepChangeTypeChecker(newTrace, oldTrace);
+		
+		dual_idt_new_visited.add(observedFaultNode);
+		new_workList.add(observedFaultNode);
+		System.out.println("#############################");
+		System.out.println("Starting Working list on CoReX");
+		
+		List<TraceNode> old_retained_dual = new ArrayList<>();		
+		List<TraceNode> new_retained_dual = new ArrayList<>();
+
+		Long dual_start_time = System.currentTimeMillis();
+		while(!new_workList.isEmpty() || !old_workList.isEmpty()){
+			while(!new_workList.isEmpty()) {
+//				System.out.println("#############################");
+				TraceNode step = new_workList.remove(0);
+			    updateWorklistKeepingIdentical(new_CashDeps, old_CashDeps, step, newTrace, oldTrace, dual_idt_new_visited, new_workList,dual_idt_old_visited,old_workList,true,typeChecker,
+			    		pairList,diffMatcher,new_data_map,new_ctl_map, proPath,new_retained_dual);				
+			}
+			////////////////////////////////////////////////////////////////////////////////////////
+			while(!old_workList.isEmpty()) {
+//				System.out.println("#############################");
+				TraceNode step = old_workList.remove(0);
+				updateWorklistKeepingIdentical(old_CashDeps, new_CashDeps, step, oldTrace, newTrace, dual_idt_old_visited,old_workList,dual_idt_new_visited, new_workList,false,typeChecker,
+						pairList,diffMatcher,old_data_map,old_ctl_map, proPath, old_retained_dual);
+			}			
+		}
+		/// ################################################################
+		/// ################################################################
+		Long dual_finish_time = System.currentTimeMillis();				
+		int dual_Time = (int) (dual_finish_time - dual_start_time);
 				
+		for(int i=dual_idt_old_visited.size()-1;i>=0; i--){
+			TraceNode step = dual_idt_old_visited.get(i);
+			if(step==null)
+				dual_idt_old_visited.remove(i);
+		}
+		for(int i=dual_idt_new_visited.size()-1;i>=0; i--){
+			TraceNode step = dual_idt_new_visited.get(i);
+			if(step==null)
+				dual_idt_new_visited.remove(i);
+		}	
+		System.out.println("##########Finish Dual Slciing with keepint identical ###################");
+//		printDualSliceResults(old_visited, false, proPath, diffMatcher);
+//		printDualSliceResults(new_visited,true, proPath,diffMatcher);
+		/// ################################################################
+		/// ################################################################
+		HashMap<Integer, Integer> oldChangeChunkInfo = new HashMap<>();
+		HashMap<Integer, Integer> newChangeChunkInfo = new HashMap<>();
+		HashMap<Integer, Integer> oldCommonChunkInfo = new HashMap<>();
+		HashMap<Integer, Integer> newCommonChunkInfo = new HashMap<>();
+		getChangeChunks(typeChecker, diffMatcher, dual_idt_old_visited,dual_idt_new_visited,oldChangeChunkInfo,newChangeChunkInfo);
+		getCommonBlocksChunks(typeChecker, diffMatcher, tc,dual_idt_old_visited,dual_idt_new_visited,oldCommonChunkInfo,newCommonChunkInfo);
+//		System.out.println("##############Printing Abstraction to Graph##############");
+//		System.out.println(old_data_map);
+		HashMap<TraceNode, List<Pair<TraceNode, String>>> both_new_data_map = new_data_map;
+		HashMap<TraceNode, List<TraceNode>> both_new_ctl_map = new_ctl_map;
+		HashMap<TraceNode, List<Pair<TraceNode, String>>> both_old_data_map = old_data_map;
+		HashMap<TraceNode, List<TraceNode>> both_old_ctl_map = old_ctl_map;
+		///################################################################
+		///################################################################
+		System.out.println("##############CoReX ##############");	
+		List<TraceNode> inpress_keep_IDT_old_kept = new ArrayList<>();
+		List<TraceNode> inpress_keep_IDT_new_kept = new ArrayList<>();
+		List<TraceNode> corex_removing_DAT_IDT_old_kept = new ArrayList<>();
+		List<TraceNode> corex_removing_DAT_IDT_new_kept = new ArrayList<>();
+		List<TraceNode> corex_old_kept = new ArrayList<>();//final kept after adding context of what we need
+		List<TraceNode> corex_new_kept = new ArrayList<>();//final kept after adding context of what we need		
+		List<String> old_kept_sourceCodeLevel = new ArrayList<>();		
+		List<String> new_kept_sourceCodeLevel = new ArrayList<>();
+		HashMap<TraceNode, List<Pair<TraceNode, String>>> new_corex_edges = new HashMap<>(); //<line 17, [(line 6, null), (line 7, f=Func_1(c,x)), (line 9, a)]>
+		HashMap<TraceNode, List<Pair<TraceNode, String>>> old_corex_edges = new HashMap<>();
+
+	
 		HashMap<Integer, List<TraceNode>> oldDataBlockNodes = new HashMap<>();
 		HashMap<Integer, List<TraceNode>> newDataBlockNodes = new HashMap<>();
 		HashMap<Integer, List<TraceNode>> oldCtlBlockNodes = new HashMap<>();
@@ -3195,36 +3362,781 @@ public class dualSlicingWithConfigE {
 		HashMap<Integer, List<TraceNode>> oldIdtBlockNodes = new HashMap<>();
 		HashMap<Integer, List<TraceNode>> newIdtBlockNodes = new HashMap<>();
 		long corex_start_time = System.currentTimeMillis();	
-		corexAlgorithm(tc, proPath, old_visited,new_visited,typeChecker,pairList, 
-				diffMatcher,both_old_data_map,both_old_ctl_map,both_new_data_map,both_new_ctl_map,old_kept, new_kept, 
-						oldDataBlockNodes, newDataBlockNodes, oldCtlBlockNodes, newCtlBlockNodes, oldIdtBlockNodes, newIdtBlockNodes, old_retained, new_retained,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
-//		long corex_finish_time = System.currentTimeMillis();			
-//		int corex_Time = (int) (corex_finish_time - corex_start_time);
-//		System.out.println("##############Saving Results##############");	
-//		if(debug)
-//			PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-//						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-//						traceTime, dual_Time, corex_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
-//		else {
-//			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
-//				PrintD4JPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-//								old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-//								traceTime, dual_Time, corex_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
-//								oldCommonChunkInfo, newCommonChunkInfo,
-//								oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
-////						PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-////								old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-////								traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo, oldCommonChunkInfo, newCommonChunkInfo,oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
-//			}		
-//			else 
-//						PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-//						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-//						traceTime, dual_Time, corex_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
-//						oldCommonChunkInfo, newCommonChunkInfo,
-//						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
-//					
-//		}		
 		
+		List<TraceNode> old_retained = new ArrayList<>();		
+		List<TraceNode> new_retained = new ArrayList<>();
+				
+		corexAlgorithm(tc, proPath, dual_idt_old_visited,dual_idt_new_visited,typeChecker,pairList, 
+				diffMatcher,both_old_data_map,both_old_ctl_map,both_new_data_map,both_new_ctl_map,corex_old_kept, corex_new_kept, inpress_keep_IDT_old_kept, inpress_keep_IDT_new_kept, 
+				corex_removing_DAT_IDT_old_kept, corex_removing_DAT_IDT_new_kept, oldDataBlockNodes, newDataBlockNodes, oldCtlBlockNodes, newCtlBlockNodes, oldIdtBlockNodes, newIdtBlockNodes, old_retained, new_retained,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel, new_corex_edges, old_corex_edges);
+		
+//		System.out.println("dual retained old" + old_retained_dual);
+//		System.out.println("dual retained new" + new_retained_dual);
+//		System.out.println("Corex retained old" + old_retained);
+//		System.out.println("Corex retained new" + new_retained);
+		
+		long corex_finish_time = System.currentTimeMillis();			
+		int corex_Time = (int) (corex_finish_time - corex_start_time);
+		System.out.println("##############Saving Results##############");	
+		PrintResults(tc,basePath, projectName, bugID, typeChecker,pairList, diffMatcher, newTrace, oldTrace,  new_visited, old_visited, inpress_new_kept,inpress_old_kept, dual_idt_new_visited, dual_idt_old_visited, corex_old_kept, corex_new_kept, inpress_keep_IDT_old_kept, inpress_keep_IDT_new_kept, 
+				corex_removing_DAT_IDT_old_kept, corex_removing_DAT_IDT_new_kept, new_retained, 
+								old_retained, newDataBlockNodes, oldDataBlockNodes, newIdtBlockNodes, oldIdtBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+								traceTime, dual_Time, corex_Time,oldChangeChunkInfo,newChangeChunkInfo,
+								oldCommonChunkInfo, newCommonChunkInfo, old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);														
+		
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	private void PrintResults(TestCase tc, String basePath, String projectName, String bugID, StepChangeTypeChecker typeChecker, PairList pairList, DiffMatcher matcher, 
+			Trace newTrace,
+			Trace oldTrace, List<TraceNode> new_visited, List<TraceNode> old_visited, List<TraceNode> inpress_new_kept,List<TraceNode> inpress_old_kept, List<TraceNode> dual_keep_IDT_new_visited, List<TraceNode> dual_keep_IDT_old_visited, List<TraceNode> old_kept, List<TraceNode> new_kept, 
+			List<TraceNode> inpress_keep_IDT_old_kept, List<TraceNode> inpress_keep_IDT_new_kept,
+			List<TraceNode> corex_removing_DAT_IDT_old_kept, List<TraceNode> corex_removing_DAT_IDT_new_kept, 
+			List<TraceNode> new_retained, List<TraceNode> old_retained,
+			HashMap<Integer, List<TraceNode>> newDataBlockNodes, HashMap<Integer, List<TraceNode>> oldDataBlockNodes,
+			HashMap<Integer, List<TraceNode>> newIdtBlockNodes, HashMap<Integer, List<TraceNode>> oldIdtBlockNodes,
+			HashMap<Integer, List<TraceNode>> newCtlBlockNodes, HashMap<Integer, List<TraceNode>> oldCtlBlockNodes,
+			int oldTraceTime, int newTraceTime, int codeTime, int traceTime, int dual_Time, int corex_Time,
+			HashMap<Integer, Integer> oldChangeChunkInfo, HashMap<Integer, Integer> newChangeChunkInfo,
+			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
+			List<String> old_kept_sourceCodeLevel,
+			List<String> new_kept_sourceCodeLevel) {
+		
+
+		Path path = Paths.get(basePath+"/results");
+		if(!Files.exists(path)) 
+			new File(basePath+"/results").mkdirs();
+		
+		String results = basePath+"/results/"+projectName+"CoReX.xlsx";
+	    File tempFile = new File(results);
+	    boolean FirstTime = false;
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+		double DualoldReduction = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(dual_keep_IDT_old_visited.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
+		double DualnewReduction = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(dual_keep_IDT_new_visited.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
+	    double InPreSSoldReduction = (Double.valueOf(dual_keep_IDT_old_visited.size())-Double.valueOf(inpress_keep_IDT_old_kept.size()))/(Double.valueOf(dual_keep_IDT_old_visited.size()))*100.0;
+	    double InPreSSnewReduction = (Double.valueOf(dual_keep_IDT_new_visited.size())-Double.valueOf(inpress_keep_IDT_new_kept.size()))/(Double.valueOf(dual_keep_IDT_new_visited.size()))*100.0;
+		
+		double DualoldReduction_orig = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(old_visited.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
+		double DualnewReduction_orig = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(new_visited.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
+	    double InPreSSoldReduction_orig = (Double.valueOf(old_visited.size())-Double.valueOf(inpress_old_kept.size()))/(Double.valueOf(old_visited.size()))*100.0;
+	    double InPreSSnewReduction_orig = (Double.valueOf(new_visited.size())-Double.valueOf(inpress_new_kept.size()))/(Double.valueOf(new_visited.size()))*100.0;
+		
+	    
+	    double CoReXDualoldReduction_orig = (Double.valueOf(old_visited.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(old_visited.size()))*100.0;
+	    double CoReXDualnewReduction_orig = (Double.valueOf(new_visited.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(new_visited.size()))*100.0;
+	    double CoReXInPreSSoldReduction_orig = (Double.valueOf(inpress_old_kept.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(inpress_old_kept.size()))*100.0;
+	    double CoReXInPreSSnewReduction_orig = (Double.valueOf(inpress_new_kept.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(inpress_new_kept.size()))*100.0;
+	    
+	    double CoReXDualoldReduction = (Double.valueOf(dual_keep_IDT_old_visited.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(dual_keep_IDT_old_visited.size()))*100.0;
+	    double CoReXDualnewReduction = (Double.valueOf(dual_keep_IDT_new_visited.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(dual_keep_IDT_new_visited.size()))*100.0;
+	    double CoReXInPreSSoldReduction = (Double.valueOf(inpress_keep_IDT_old_kept.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(inpress_keep_IDT_old_kept.size()))*100.0;
+	    double CoReXInPreSSnewReduction = (Double.valueOf(inpress_keep_IDT_new_kept.size())-Double.valueOf(new_kept.size()))/(Double.valueOf(inpress_keep_IDT_new_kept.size()))*100.0;
+	    
+		if (!tempFile.exists()) {
+	        FirstTime=true;
+	        XSSFWorkbook workbook = new XSSFWorkbook();
+	        XSSFSheet sheet = workbook.createSheet("RQ1");
+	        try {
+	        	FileOutputStream outputStream = new FileOutputStream(results);
+	            workbook.write(outputStream);
+	            workbook.close();
+	        	outputStream.close();
+	        } catch (Exception e) {
+	        }
+	    }		
+
+        if (FirstTime) {		    	
+	        String[] header = {"Bug ID", 
+	        		"Old trace size (#T)","Old Dual size + IDT(#DSlice+)", "%Old Trace vs Dual Reduct.", "#Old Chg", "Old InPreSS size + IDT(#InPreSS)", "%Old Dual vs InPreSS Reduct.", "Old CoReX size (#CoReX)", "%Old Dual vs CoReX Reduct.", "%Old InPreSS vs CoReX Reduct.", 
+	        		"New trace size (#T)","New Dual size + IDT(#DSlice)", "%New Trace vs Dual Reduct.", "#New Chg", "New InPreSS size + IDT(#InPreSS)", "%New Dual vs InPreSS Reduct.", "New CoReX size (#CoReX)", "%New Dual vs CoReX Reduct.", "%New InPreSS vs CoReX Reduct.",
+	        		"Old Dual size #DSlice+)", "%Old Trace vs Dual Reduct.", "#Old Chg", "Old InPreSS size(#InPreSS)", "%Old Dual vs InPreSS Reduct.", "Old CoReX size (#CoReX)", "%Old Dual vs CoReX Reduct.", "%Old InPreSS vs CoReX Reduct.", 
+	        		"New Dual size (#DSlice)", "%New Trace vs Dual Reduct.", "#New Chg", "New InPreSS size(#InPreSS)", "%New Dual vs InPreSS Reduct.", "New CoReX size (#CoReX)", "%New Dual vs CoReX Reduct.", "%New InPreSS vs CoReX Reduct.",
+	        		"DSlice Time (Min)", "CoReX Time (Min)"
+	        		};
+	        WriteToExcel(results, header, "RQ1",false, true);
+	    }
+	    String[] detailedDataRQ1 = {bugID, 
+	    		String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(dual_keep_IDT_old_visited.size()), String.valueOf(DualoldReduction), 
+	    		String.valueOf(oldChangeChunkInfo.keySet().size()), String.valueOf(inpress_keep_IDT_old_kept.size()), String.valueOf(InPreSSoldReduction), 
+	    		String.valueOf(old_kept.size()), String.valueOf(CoReXDualoldReduction), String.valueOf(CoReXInPreSSoldReduction),
+	    		String.valueOf(newTrace.getExecutionList().size()), String.valueOf(dual_keep_IDT_new_visited.size()), String.valueOf(DualnewReduction), 
+	    		String.valueOf(newChangeChunkInfo.keySet().size()), String.valueOf(inpress_keep_IDT_new_kept.size()), String.valueOf(InPreSSnewReduction), 
+	    		String.valueOf(new_kept.size()), String.valueOf(CoReXDualnewReduction), String.valueOf(CoReXInPreSSnewReduction),
+	    		String.valueOf(old_visited.size()), String.valueOf(DualoldReduction_orig), 
+	    		String.valueOf(oldChangeChunkInfo.keySet().size()), String.valueOf(inpress_old_kept.size()), String.valueOf(InPreSSoldReduction_orig), 
+	    		String.valueOf(old_kept.size()), String.valueOf(CoReXDualoldReduction_orig), String.valueOf(CoReXInPreSSoldReduction_orig),
+	    		String.valueOf(new_visited.size()), String.valueOf(DualnewReduction_orig), 
+	    		String.valueOf(newChangeChunkInfo.keySet().size()), String.valueOf(inpress_new_kept.size()), String.valueOf(InPreSSnewReduction_orig), 
+	    		String.valueOf(new_kept.size()), String.valueOf(CoReXDualnewReduction_orig), String.valueOf(CoReXInPreSSnewReduction_orig),
+	    		String.valueOf((Double.valueOf(dual_Time)/1000.0)/60.0), String.valueOf((Double.valueOf(corex_Time)/1000.0)/60.0)
+	    		};
+	    WriteToExcel(results,detailedDataRQ1,"RQ1",false, false);
+					
+
+	    /////////////////#######////#######////#######////#######////#######////#######
+	    /////////////////#######////#######////#######////#######////#######////#######
+
+	    int h1No_old = 0;
+	    for(TraceNode node: corex_removing_DAT_IDT_old_kept) {
+	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
+	    	if (changeType.getType()==StepChangeType.IDT)//sufficient identical that is kept
+	    		h1No_old++;	    		
+	    }
+	    int h1No_new = 0;
+	    for(TraceNode node: corex_removing_DAT_IDT_new_kept) {
+	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
+	    	if (changeType.getType()==StepChangeType.IDT)
+	    		h1No_new++;	    		
+	    }
+	    
+	    int h2No_old = 0; 
+	    for(TraceNode node: inpress_keep_IDT_old_kept) {
+	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
+	    	if (changeType.getType()==StepChangeType.DAT && (!corex_removing_DAT_IDT_old_kept.contains(node)))//unnecessary data that is removed
+	    		h2No_old++;	    		
+	    }
+	    int h2No_new = 0;
+	    for(TraceNode node: corex_removing_DAT_IDT_new_kept) {
+	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
+	    	if (changeType.getType()==StepChangeType.DAT && (!corex_removing_DAT_IDT_new_kept.contains(node)))//unnecessary data that is removed
+	    		h2No_new++;	    		
+	    }
+	    int h2No_old_nec = 0;
+	    for(TraceNode node: corex_removing_DAT_IDT_old_kept) {
+	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
+	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL) && corex_removing_DAT_IDT_new_kept.contains(node))
+	    		h2No_old_nec++;	    		
+	    }
+	    int h2No_new_nec = 0;
+	    for(TraceNode node: corex_removing_DAT_IDT_new_kept) {
+	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
+	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL) && corex_removing_DAT_IDT_old_kept.contains(node))
+	    		h2No_new_nec++;	    		
+	    }
+	    
+	    int h3No_old = 0;
+	    for(TraceNode node: old_kept) {
+	    	if (!corex_removing_DAT_IDT_old_kept.contains(node))
+	    		h3No_old++;	    		
+	    }
+	    int h3No_new = 0;
+	    for(TraceNode node: new_kept) {
+	    	if (!corex_removing_DAT_IDT_new_kept.contains(node))
+	    		h3No_new++;	    		
+	    }
+	    
+	    if (FirstTime) {		    	
+	        String[] header = {"Bug ID", 
+	        		"Old CoReX size (#CoReX)", "H1: Old relevant size (#Sufficiency)", "H2: Old unnecessary size (#Unnecessary)", "H2: Old necessary size (#necessary)", "H3: Old Contex size (#Context)", 
+	        		"New CoReX size (#CoReX)", "H1: New relevant size (#Sufficiency)", "H2: New unnecessary size (#Unnecessary)", "H2: Old necessary size (#necessary)", "H3: New Contex size (#Context)"
+	        		};
+	        WriteToExcel(results, header, "RQ2",true,true);
+	    }
+	    
+	    String[] detailedDataRQ2 = {bugID, 
+	    		String.valueOf(old_kept.size()), String.valueOf(h1No_old), String.valueOf(h2No_old), String.valueOf(h2No_old_nec), String.valueOf(h3No_old),
+	    		String.valueOf(new_kept.size()), String.valueOf(h1No_new), String.valueOf(h2No_new), String.valueOf(h2No_new_nec), String.valueOf(h3No_new),
+	    		};
+	    WriteToExcel(results,detailedDataRQ2,"RQ2",true, false);
+		/////////////////#######////#######////#######////#######////#######////#######
+		/////////////////#######////#######////#######////#######////#######////#######
+	    		       
+	    double sum = 0.0;
+	    for(Integer loc:oldChangeChunkInfo.keySet()) {
+	    	sum += oldChangeChunkInfo.get(loc);
+	    }
+	    double avg = sum/(double)oldChangeChunkInfo.keySet().size();
+	    double oldLocation = avg/(double)oldTrace.getExecutionList().size();
+	    int oldChangedStamts = getChanges(old_retained, tc);
+	    
+	    sum = 0.0;
+	    for(Integer loc:newChangeChunkInfo.keySet()) {
+	    	sum += newChangeChunkInfo.get(loc);
+	    }
+	    avg = sum/(double)newChangeChunkInfo.keySet().size();
+	    double newLocation = avg/(double)newTrace.getExecutionList().size();
+	    int newChangedStamts = getChanges(new_retained, tc);
+	    
+	    double oldCommonBlockAvg = 0.0;
+	    double oldCommonBlockMax = -1000000.0;
+	    double oldCommonBlockMin = 100000.0;
+	    double oldCommonBlockSum = 0.0;
+		for (Integer blockID :oldCommonChunkInfo.keySet()) {
+			Integer noOfStmts = oldCommonChunkInfo.get(blockID);
+			if(noOfStmts!=null) {
+				oldCommonBlockSum = oldCommonBlockSum + noOfStmts;
+				if (oldCommonBlockMax<noOfStmts)
+					oldCommonBlockMax = noOfStmts;
+				if (oldCommonBlockMin>noOfStmts)
+					oldCommonBlockMin = noOfStmts;
+			}			
+		}
+		oldCommonBlockAvg = oldCommonBlockSum/oldCommonChunkInfo.keySet().size();
+
+		
+	    double newCommonBlockAvg = 0.0;
+	    double newCommonBlockMax = -1000000.0;
+	    double newCommonBlockMin = 100000.0;
+	    double newCommonBlockSum = 0.0;
+		for (Integer blockID :newCommonChunkInfo.keySet()) {
+			Integer noOfStmts = newCommonChunkInfo.get(blockID);
+			if(noOfStmts!=null) {
+				newCommonBlockSum = newCommonBlockSum + noOfStmts;
+				if (newCommonBlockMax<noOfStmts)
+					newCommonBlockMax = noOfStmts;
+				if (newCommonBlockMin>noOfStmts)
+					newCommonBlockMin = noOfStmts;
+			}			
+		}
+		newCommonBlockAvg = newCommonBlockSum/newCommonChunkInfo.keySet().size();
+
+		/////////////////#######////#######////#######////#######////#######////#######
+		/////////////////#######////#######////#######////#######////#######////#######
+	    	
+		//calculating #B, avg, max of data blocks on dual slice
+	    double oldDATDualAvg = 0.0;
+	    double oldDATDualMax = -1000000.0;
+	    double oldDATDualMin = 100000.0;
+	    double oldDATDualSum = 0.0;
+		for (Integer block :oldDataBlockNodes.keySet()) {
+			List<TraceNode> nodes = oldDataBlockNodes.get(block);
+			if(nodes!=null) {
+				oldDATDualSum = oldDATDualSum + nodes.size();
+				if (oldDATDualMax<nodes.size())
+					oldDATDualMax = nodes.size();
+				if (oldDATDualMin>nodes.size())
+					oldDATDualMin = nodes.size();
+			}			
+		}
+		oldDATDualAvg = oldDATDualSum/oldDataBlockNodes.keySet().size();
+
+		
+		double newDATDualAvg = 0.0;
+	    double newDATDualMax = -100000.0;
+	    double newDATDualMin = 100000.0;
+	    double newDATDualSum = 0.0;
+		for (Integer block :newDataBlockNodes.keySet()) {
+			List<TraceNode> nodes = newDataBlockNodes.get(block);
+			if(nodes!=null) {
+				newDATDualSum = newDATDualSum + nodes.size();
+				if (newDATDualMax<nodes.size())
+					newDATDualMax = nodes.size();
+				if (newDATDualMin>nodes.size())
+					newDATDualMin = nodes.size();
+			}			
+		}
+		newDATDualAvg = newDATDualSum/newDataBlockNodes.keySet().size();
+
+		
+		//calculating #B, avg, max of data blocks on InPReSS
+		double oldDATInPreSSAvg = 0.0;
+		double oldDATInPreSSMax = -100000.0;
+		double oldDATInPreSSMin = 100000.0;
+		double oldDATInPreSSSum = 0.0;
+		for (Integer block :oldDataBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldDataBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (inpress_keep_IDT_old_kept.contains(node))
+						size = size + 1;
+				}
+				oldDATInPreSSSum = oldDATInPreSSSum + size;
+				if (oldDATInPreSSMax<size)
+					oldDATInPreSSMax = size;
+				if (oldDATInPreSSMin>size)
+					oldDATInPreSSMin = size;
+			}			
+		}
+		oldDATInPreSSAvg = oldDATInPreSSSum/oldDataBlockNodes.keySet().size();
+
+		
+		double newDATInPreSSAvg = 0.0;
+	    double newDATInPreSSMax = -100000.0;
+	    double newDATInPreSSMin = 100000.0;
+	    double newDATInPreSSSum = 0.0;
+		for (Integer block :newDataBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newDataBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (inpress_keep_IDT_new_kept.contains(node))
+						size = size + 1;
+				}
+				newDATInPreSSSum = newDATInPreSSSum + size;
+				if (newDATInPreSSMax<size)
+					newDATInPreSSMax = size;
+				if (newDATInPreSSMin>size)
+					newDATInPreSSMin = size;
+			}			
+		}
+		newDATInPreSSAvg = newDATInPreSSSum/newDataBlockNodes.keySet().size();
+         
+		
+		//calculating #B, avg, max of data blocks on CoReX
+		double oldDATCoReXAvg = 0.0;
+		double oldDATCoReXMax = -100000.0;
+		double oldDATCoReXMin = 100000.0;
+		double oldDATCoReXSum = 0.0;
+		for (Integer block :oldDataBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldDataBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (old_kept.contains(node))
+						size = size + 1;
+				}
+				oldDATCoReXSum = oldDATCoReXSum + size;
+				if (oldDATCoReXMax<size)
+					oldDATCoReXMax = size;
+				if (oldDATCoReXMin>size)
+					oldDATCoReXMin = size;
+			}			
+		}
+		oldDATCoReXAvg = oldDATCoReXSum/oldDataBlockNodes.keySet().size();
+
+		
+		double newDATCoReXAvg = 0.0;
+	    double newDATCoReXMax = -100000.0;
+	    double newDATCoReXMin = 100000.0;
+	    double newDATCoReXSum = 0.0;
+		for (Integer block :newDataBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newDataBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (new_kept.contains(node))
+						size = size + 1;
+				}
+				newDATCoReXSum = newDATCoReXSum + size;
+				if (newDATCoReXMax<size)
+					newDATCoReXMax = size;
+				if (newDATCoReXMin>size)
+					newDATCoReXMin = size;
+			}			
+		}
+		newDATCoReXAvg = newDATCoReXSum/newDataBlockNodes.keySet().size();
+		
+		/////////////////#######////#######////#######////#######////#######////#######
+		/////////////////#######////#######////#######////#######////#######////#######
+			
+		//calculating #B, avg, max of idt blocks on dual slice
+		double oldIDTDualAvg = 0.0;
+		double oldIDTDualMax = -1000000.0;
+		double oldIDTDualMin = 100000.0;
+		double oldIDTDualSum = 0.0;
+		for (Integer block :oldIdtBlockNodes.keySet()) {
+			List<TraceNode> nodes = oldIdtBlockNodes.get(block);
+			if(nodes!=null) {
+				oldIDTDualSum = oldIDTDualSum + nodes.size();
+				if (oldIDTDualMax<nodes.size())
+					oldIDTDualMax = nodes.size();
+				if (oldIDTDualMin>nodes.size())
+					oldIDTDualMin = nodes.size();
+			}			
+		}
+		oldIDTDualAvg = oldIDTDualSum/oldIdtBlockNodes.keySet().size();
+		
+		
+		double newIDTDualAvg = 0.0;
+		double newIDTDualMax = -100000.0;
+		double newIDTDualMin = 100000.0;
+		double newIDTDualSum = 0.0;
+		for (Integer block :newIdtBlockNodes.keySet()) {
+			List<TraceNode> nodes = newIdtBlockNodes.get(block);
+			if(nodes!=null) {
+				newIDTDualSum = newIDTDualSum + nodes.size();
+				if (newIDTDualMax<nodes.size())
+					newIDTDualMax = nodes.size();
+				if (newIDTDualMin>nodes.size())
+					newIDTDualMin = nodes.size();
+			}			
+		}
+		newIDTDualAvg = newIDTDualSum/newIdtBlockNodes.keySet().size();
+		
+		
+		//calculating #B, avg, max of idt blocks on inpress
+		double oldIDTInPreSSAvg = 0.0;
+		double oldIDTInPreSSMax = -100000.0;
+		double oldIDTInPreSSMin = 100000.0;
+		double oldIDTInPreSSSum = 0.0;
+		for (Integer block :oldIdtBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldIdtBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (inpress_keep_IDT_old_kept.contains(node))
+						size = size + 1;
+				}
+				oldIDTInPreSSSum = oldIDTInPreSSSum + size;
+				if (oldIDTInPreSSMax<size)
+					oldIDTInPreSSMax = size;
+				if (oldIDTInPreSSMin>size)
+					oldIDTInPreSSMin = size;
+			}			
+		}
+		oldIDTInPreSSAvg = oldIDTInPreSSSum/oldIdtBlockNodes.keySet().size();
+		
+		
+		double newIDTInPreSSAvg = 0.0;
+		double newIDTInPreSSMax = -100000.0;
+		double newIDTInPreSSMin = 100000.0;
+		double newIDTInPreSSSum = 0.0;
+		for (Integer block :newIdtBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newIdtBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (inpress_keep_IDT_new_kept.contains(node))
+						size = size + 1;
+				}
+				newIDTInPreSSSum = newIDTInPreSSSum + size;
+				if (newIDTInPreSSMax<size)
+					newIDTInPreSSMax = size;
+				if (newIDTInPreSSMin>size)
+					newIDTInPreSSMin = size;
+			}			
+		}
+		newIDTInPreSSAvg = newIDTInPreSSSum/newIdtBlockNodes.keySet().size();
+		 
+		
+		//calculating #B, avg, max of idt blocks on CoReX
+		double oldIDTCoReXAvg = 0.0;
+		double oldIDTCoReXMax = -100000.0;
+		double oldIDTCoReXMin = 100000.0;
+		double oldIDTCoReXSum = 0.0;
+		for (Integer block :oldIdtBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldIdtBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (old_kept.contains(node))
+						size = size + 1;
+				}
+				oldIDTCoReXSum = oldIDTCoReXSum + size;
+				if (oldIDTCoReXMax<size)
+					oldIDTCoReXMax = size;
+				if (oldIDTCoReXMin>size)
+					oldIDTCoReXMin = size;
+			}			
+		}
+		oldIDTCoReXAvg = oldIDTCoReXSum/oldIdtBlockNodes.keySet().size();
+		
+		
+		double newIDTCoReXAvg = 0.0;
+		double newIDTCoReXMax = -100000.0;
+		double newIDTCoReXMin = 100000.0;
+		double newIDTCoReXSum = 0.0;
+		for (Integer block :newIdtBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newIdtBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (new_kept.contains(node))
+						size = size + 1;
+				}
+				newIDTCoReXSum = newIDTCoReXSum + size;
+				if (newIDTCoReXMax<size)
+					newIDTCoReXMax = size;
+				if (newIDTCoReXMin>size)
+					newIDTCoReXMin = size;
+			}			
+		}
+		newIDTCoReXAvg = newIDTCoReXSum/newIdtBlockNodes.keySet().size();
+
+		/////////////////#######////#######////#######////#######////#######////#######
+		/////////////////#######////#######////#######////#######////#######////#######
+		//calculating #B, avg, max of control blocks on dual slice
+		double oldCTLDualAvg = 0.0;
+		double oldCTLDualMax = -1000000.0;
+		double oldCTLDualMin = 100000.0;
+		double oldCTLDualSum = 0.0;
+		for (Integer block :oldCtlBlockNodes.keySet()) {
+			List<TraceNode> nodes = oldCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				oldCTLDualSum = oldCTLDualSum + nodes.size();
+				if (oldCTLDualMax<nodes.size())
+					oldCTLDualMax = nodes.size();
+				if (oldCTLDualMin>nodes.size())
+					oldCTLDualMin = nodes.size();
+			}			
+		}
+		oldCTLDualAvg = oldCTLDualSum/oldCtlBlockNodes.keySet().size();
+
+		
+		double newCTLDualAvg = 0.0;
+		double newCTLDualMax = -100000.0;
+		double newCTLDualMin = 100000.0;
+		double newCTLDualSum = 0.0;
+		for (Integer block :newCtlBlockNodes.keySet()) {
+			List<TraceNode> nodes = newCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				newCTLDualSum = newCTLDualSum + nodes.size();
+				if (newCTLDualMax<nodes.size())
+					newCTLDualMax = nodes.size();
+				if (newCTLDualMin>nodes.size())
+					newCTLDualMin = nodes.size();
+			}			
+		}
+		newCTLDualAvg = newCTLDualSum/newCtlBlockNodes.keySet().size();
+
+		
+		//calculating #B, avg, max of control blocks on inpress
+		double oldCTLInPreSSAvg = 0.0;
+		double oldCTLInPreSSMax = -100000.0;
+		double oldCTLInPreSSMin = 100000.0;
+		double oldCTLInPreSSSum = 0.0;
+		for (Integer block :oldCtlBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (inpress_keep_IDT_old_kept.contains(node))
+						size = size + 1;
+				}
+				oldCTLInPreSSSum = oldCTLInPreSSSum + size;
+				if (oldCTLInPreSSMax<size)
+					oldCTLInPreSSMax = size;
+				if (oldCTLInPreSSMin>size)
+					oldCTLInPreSSMin = size;
+			}			
+		}
+		oldCTLInPreSSAvg = oldCTLInPreSSSum/oldCtlBlockNodes.keySet().size();
+
+		
+		double newCTLInPreSSAvg = 0.0;
+	    double newCTLInPreSSMax = -100000.0;
+	    double newCTLInPreSSMin = 100000.0;
+	    double newCTLInPreSSSum = 0.0;
+		for (Integer block :newCtlBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (inpress_keep_IDT_new_kept.contains(node))
+						size = size + 1;
+				}
+				newCTLInPreSSSum = newCTLInPreSSSum + size;
+				if (newCTLInPreSSMax<size)
+					newCTLInPreSSMax = size;
+				if (newCTLInPreSSMin>size)
+					newCTLInPreSSMin = size;
+			}			
+		}
+		newCTLInPreSSAvg = newCTLInPreSSSum/newCtlBlockNodes.keySet().size();		
+	    
+		//calculating #B, avg, max of control blocks on corex
+		double oldCTLCoReXAvg = 0.0;
+		double oldCTLCoReXMax = -100000.0;
+		double oldCTLCoReXMin = 100000.0;
+		double oldCTLCoReXSum = 0.0;
+		for (Integer block :oldCtlBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = oldCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (old_kept.contains(node))
+						size = size + 1;
+				}
+				oldCTLCoReXSum = oldCTLCoReXSum + size;
+				if (oldCTLCoReXMax<size)
+					oldCTLCoReXMax = size;
+				if (oldCTLCoReXMin>size)
+					oldCTLCoReXMin = size;
+			}			
+		}
+		oldCTLCoReXAvg = oldCTLCoReXSum/oldCtlBlockNodes.keySet().size();
+
+		
+		double newCTLCoReXAvg = 0.0;
+	    double newCTLCoReXMax = -100000.0;
+	    double newCTLCoReXMin = 100000.0;
+	    double newCTLCoReXSum = 0.0;
+		for (Integer block :newCtlBlockNodes.keySet()) {
+			int size = 0;
+			List<TraceNode> nodes = newCtlBlockNodes.get(block);
+			if(nodes!=null) {
+				for (TraceNode node: nodes) {
+					if (new_kept.contains(node))
+						size = size + 1;
+				}
+				newCTLCoReXSum = newCTLCoReXSum + size;
+				if (newCTLCoReXMax<size)
+					newCTLCoReXMax = size;
+				if (newCTLCoReXMin>size)
+					newCTLCoReXMin = size;
+			}			
+		}
+		newCTLCoReXAvg = newCTLCoReXSum/newCtlBlockNodes.keySet().size();		
+	    
+		
+		
+		/////////////////#######////#######////#######////#######////#######////#######
+		/////////////////#######////#######////#######////#######////#######////#######
+		
+		
+		
+	    double Dual_reducOldData =  (Double.valueOf(dual_keep_IDT_old_visited.size())-(old_retained.size()+oldCTLDualSum+oldIDTDualSum+oldDATCoReXSum))/(Double.valueOf(dual_keep_IDT_old_visited.size()))*100.0;
+	    double Dual_reducOldCTL =  (Double.valueOf(dual_keep_IDT_old_visited.size())-(old_retained.size()+oldDATDualSum+oldIDTDualSum+oldCTLCoReXSum))/(Double.valueOf(dual_keep_IDT_old_visited.size()))*100.0;
+	    double Dual_reducOldIDT =  (Double.valueOf(dual_keep_IDT_old_visited.size())-(old_retained.size()+oldDATDualSum+oldCTLDualSum+oldIDTCoReXSum))/(Double.valueOf(dual_keep_IDT_old_visited.size()))*100.0;
+	    double Dual_reducnewData =  (Double.valueOf(dual_keep_IDT_new_visited.size())-(new_retained.size()+newCTLDualSum+newIDTDualSum+newDATCoReXSum))/(Double.valueOf(dual_keep_IDT_new_visited.size()))*100.0;
+	    double Dual_reducnewCTL =  (Double.valueOf(dual_keep_IDT_new_visited.size())-(new_retained.size()+newDATDualSum+newIDTDualSum+newCTLCoReXSum))/(Double.valueOf(dual_keep_IDT_new_visited.size()))*100.0;
+	    double Dual_reducnewIDT =  (Double.valueOf(dual_keep_IDT_new_visited.size())-(new_retained.size()+newDATDualSum+newCTLDualSum+newIDTCoReXSum))/(Double.valueOf(dual_keep_IDT_new_visited.size()))*100.0;
+	    
+	    double InPreSS_reducOldData =  (Double.valueOf(inpress_keep_IDT_old_kept.size())-(old_retained.size()+oldCTLInPreSSSum+oldIDTInPreSSSum+oldDATCoReXSum))/(Double.valueOf(inpress_keep_IDT_old_kept.size()))*100.0;
+	    double InPreSS_reducOldCTL =  (Double.valueOf(inpress_keep_IDT_old_kept.size())-(old_retained.size()+oldDATInPreSSSum+oldIDTInPreSSSum+oldCTLCoReXSum))/(Double.valueOf(inpress_keep_IDT_old_kept.size()))*100.0;
+	    double InPreSS_reducOldIDT =  (Double.valueOf(inpress_keep_IDT_old_kept.size())-(old_retained.size()+oldDATInPreSSSum+oldCTLInPreSSSum+oldIDTCoReXSum))/(Double.valueOf(inpress_keep_IDT_old_kept.size()))*100.0;
+	    double InPreSS_reducnewData =  (Double.valueOf(inpress_keep_IDT_new_kept.size())-(new_retained.size()+newCTLInPreSSSum+newIDTInPreSSSum+newDATCoReXSum))/(Double.valueOf(inpress_keep_IDT_new_kept.size()))*100.0;
+	    double InPreSS_reducnewCTL =  (Double.valueOf(inpress_keep_IDT_new_kept.size())-(new_retained.size()+newDATInPreSSSum+newIDTInPreSSSum+newCTLCoReXSum))/(Double.valueOf(inpress_keep_IDT_new_kept.size()))*100.0;
+	    double InPreSS_reducnewIDT =  (Double.valueOf(inpress_keep_IDT_new_kept.size())-(new_retained.size()+newDATInPreSSSum+newCTLInPreSSSum+newIDTCoReXSum))/(Double.valueOf(inpress_keep_IDT_new_kept.size()))*100.0;
+	    
+	    if (FirstTime) {		    	
+	        String[] header = {"Bug ID", 	        		
+	        		"# Old mathched block", "Old Match Avg.", "Old Match Max", "%Old Match Reduction (vs Dual)", "%Old Match Reduction (vs InPreSS)",
+	        		"# Old identical block", "Old Identical Avg.", "Old Identical Max", "%Old Identical Reduction (vs Dual)", "%Old Identical Reduction (vs InPreSS)",
+	        		"# Old unmathched block", "Old UnMatch Avg.", "Old UnMatch Max", "%Old UnMatch Reduction", "%Old UnMatch Reduction (vs Dual)", "%Old UnMatch Reduction (vs InPreSS)",
+	        		"# New mathched block", "New Match Avg.", "New Match Max", "%New Match Reduction", "%New Match Reduction (vs Dual)", "%New Match Reduction (vs InPreSS)",
+	        		"# New identical block", "New Identical Avg.", "New Identical Max", "%New Identical Reduction", "%New Identical Reduction (vs Dual)", "%New Identical Reduction (vs InPreSS)",
+	        		"# New unmathched block", "New UnMatch Avg.", "New UnMatch Max", "%New UnMatch Reduction", "%New UnMatch Reduction (vs Dual)", "%New UnMatch Reduction (vs InPreSS)"
+	        		};
+	        WriteToExcel(results, header, "RQ3",true,true);
+	    }
+	    
+	    String[] detailedDataRQ3 = {bugID, 
+	    		String.valueOf(oldDataBlockNodes.keySet().size()), String.valueOf(oldDATCoReXAvg),String.valueOf(oldDATCoReXMax),String.valueOf(Dual_reducOldData),String.valueOf(InPreSS_reducOldData),
+	    		String.valueOf(oldIdtBlockNodes.keySet().size()), String.valueOf(oldIDTCoReXAvg),String.valueOf(oldIDTCoReXMax),String.valueOf(Dual_reducOldIDT),String.valueOf(InPreSS_reducOldIDT),
+	    		String.valueOf(oldCtlBlockNodes.keySet().size()), String.valueOf(oldCTLCoReXAvg),String.valueOf(oldCTLCoReXMax),String.valueOf(Dual_reducOldCTL),String.valueOf(InPreSS_reducOldCTL),
+	    		String.valueOf(newDataBlockNodes.keySet().size()), String.valueOf(newDATCoReXAvg),String.valueOf(newDATCoReXMax),String.valueOf(Dual_reducnewData),String.valueOf(InPreSS_reducnewData),
+	    		String.valueOf(newIdtBlockNodes.keySet().size()), String.valueOf(newIDTCoReXAvg),String.valueOf(newIDTCoReXMax),String.valueOf(Dual_reducnewIDT),String.valueOf(InPreSS_reducnewIDT),
+	    		String.valueOf(newCtlBlockNodes.keySet().size()), String.valueOf(newCTLCoReXAvg),String.valueOf(newCTLCoReXMax),String.valueOf(Dual_reducnewCTL),String.valueOf(InPreSS_reducnewCTL),
+	    		};
+	       WriteToExcel(results,detailedDataRQ3,"RQ3",true,false);
+	    
+	       /////////////////#######////#######////#######////#######////#######////#######
+	       /////////////////#######////#######////#######////#######////#######////#######
+	       
+	       boolean Einspect5_Dual = CanFindTheBug(5, old_visited, new_visited,old_retained,new_retained);
+	       boolean Einspect5_InPreSS = CanFindTheBug(5, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
+	       boolean Einspect5_CoReX = CanFindTheBug(5, old_kept, new_kept,old_retained,new_retained);
+	       
+	       boolean Einspect10_Dual = CanFindTheBug(10, old_visited, new_visited,old_retained,new_retained);
+	       boolean Einspect10_InPreSS = CanFindTheBug(10, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
+	       boolean Einspect10_CoReX = CanFindTheBug(10, old_kept, new_kept,old_retained,new_retained);
+	       
+	       boolean Einspect30_Dual = CanFindTheBug(30, old_visited, new_visited,old_retained,new_retained);
+	       boolean Einspect30_InPreSS = CanFindTheBug(30, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
+	       boolean Einspect30_CoReX = CanFindTheBug(30, old_kept, new_kept,old_retained,new_retained);
+	       
+	       boolean Einspect50_Dual = CanFindTheBug(50, old_visited, new_visited,old_retained,new_retained);
+	       boolean Einspect50_InPreSS = CanFindTheBug(50, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
+	       boolean Einspect50_CoReX = CanFindTheBug(50, old_kept, new_kept,old_retained,new_retained);
+	  
+	       boolean Einspect100_Dual = CanFindTheBug(100, old_visited, new_visited,old_retained,new_retained);
+	       boolean Einspect100_InPreSS = CanFindTheBug(100, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
+	       boolean Einspect100_CoReX = CanFindTheBug(100, old_kept, new_kept,old_retained,new_retained);
+	  
+	       boolean Einspect200_Dual = CanFindTheBug(200, old_visited, new_visited,old_retained,new_retained);
+	       boolean Einspect200_InPreSS = CanFindTheBug(200, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
+	       boolean Einspect200_CoReX = CanFindTheBug(200, old_kept, new_kept,old_retained,new_retained);
+	       
+	       int traversed_old_Dual = CalculateWastedEffort(old_visited,old_retained);
+	       int traversed_new_Dual = CalculateWastedEffort(new_visited,new_retained);
+	       int traversed_old_InPreSS = CalculateWastedEffort(inpress_old_kept,old_retained);
+	       int traversed_new_InPreSS = CalculateWastedEffort(inpress_new_kept,new_retained);
+	       int traversed_old_CoReX = CalculateWastedEffort(old_kept,old_retained);
+	       int traversed_new_CoReX = CalculateWastedEffort(new_kept,new_retained);
+	       
+	       double wasted_effort_old_Dual = (double)traversed_old_Dual/oldTrace.getExecutionList().size();
+	       double wasted_effort_new_Dual = (double)traversed_new_Dual/newTrace.getExecutionList().size();
+	       double wasted_effort_old_InPreSS = (double)traversed_old_InPreSS/oldTrace.getExecutionList().size();
+	       double wasted_effort_new_InPreSS = (double)traversed_new_InPreSS/newTrace.getExecutionList().size();
+	       double wasted_effort_old_CoReX = (double)traversed_old_CoReX/oldTrace.getExecutionList().size();
+	       double wasted_effort_new_CoRex = (double)traversed_new_CoReX/newTrace.getExecutionList().size();
+	       
+	       if (FirstTime) {		    	
+		        String[] header = {"Bug ID", 
+		        		"Einspect@5-Dual", "Einspect@5-InPreSS", "Einspect@5-CoReX", 
+		        		"Einspect@10-Dual", "Einspect@10-InPreSS", "Einspect@10-CoReX", 
+		        		"Einspect@30-Dual", "Einspect@30-InPreSS", "Einspect@30-CoReX",
+		        		"Einspect@50-Dual", "Einspect@50-InPreSS", "Einspect@50-CoReX",
+		        		"Einspect@100-Dual", "Einspect@100-InPreSS", "Einspect@100-CoReX",
+		        		"Einspect@200-Dual", "Einspect@200-InPreSS", "Einspect@200-CoReX",
+		        		"#Traversed Old Stmt-Dual", "#Traversed New Stmt-Dual", "#Traversed Old Stmt-InPreSS", "#Traversed New Stmt-InPreSS", "#Traversed Old Stmt-CoReX","#Traversed New Stmt-CoReX",
+		        		"Exam% Old-Dual", "Exam% New-Dual", "Exam% Old-InPreSS", "Exam% New-InPreSS", "Exam% Old-CoReX","Exam% New-CoReX",
+		        		
+		        		};
+		        WriteToExcel(results, header, "RQ4",true, true);
+		    }
+		    String[] detailedDataRQ4 = {bugID, 
+		    		String.valueOf(Einspect5_Dual),String.valueOf(Einspect5_InPreSS),String.valueOf(Einspect5_CoReX),
+		    		String.valueOf(Einspect10_Dual),String.valueOf(Einspect10_InPreSS),String.valueOf(Einspect10_CoReX),
+		    		String.valueOf(Einspect30_Dual),String.valueOf(Einspect30_InPreSS),String.valueOf(Einspect30_CoReX),
+		    		String.valueOf(Einspect50_Dual),String.valueOf(Einspect50_InPreSS),String.valueOf(Einspect50_CoReX),
+		    		String.valueOf(Einspect100_Dual),String.valueOf(Einspect100_InPreSS),String.valueOf(Einspect100_CoReX),
+		    		String.valueOf(Einspect200_Dual),String.valueOf(Einspect200_InPreSS),String.valueOf(Einspect200_CoReX),
+		    		String.valueOf(traversed_old_Dual),String.valueOf(traversed_new_Dual),String.valueOf(traversed_old_InPreSS),String.valueOf(traversed_new_InPreSS),String.valueOf(traversed_old_CoReX),String.valueOf(traversed_new_CoReX),
+		    		String.valueOf(wasted_effort_old_Dual),String.valueOf(wasted_effort_new_Dual),String.valueOf(wasted_effort_old_InPreSS),String.valueOf(wasted_effort_new_InPreSS),String.valueOf(wasted_effort_old_CoReX),String.valueOf(wasted_effort_new_CoRex)
+		    };
+		    WriteToExcel(results,detailedDataRQ4,"RQ4",true, false);
+						
+
+		    /////////////////#######////#######////#######////#######////#######////#######
+		    /////////////////#######////#######////#######////#######////#######////#######
+		System.out.println("##############Finish##############");
+		
+	}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+private int CalculateWastedEffort(List<TraceNode> visited, List<TraceNode> retained) {
+		int NoStmt = 0;
+		int traversed = 0;
+		Collections.sort(visited, new TraceNodeOrderComparator());
+		for(int i=visited.size()-1;i>=0;i--) {
+			traversed++;
+			if(retained.contains(visited.get(i)))
+				NoStmt ++;
+			if(NoStmt==retained.size())
+				return traversed;
+		}
+		return traversed;
+}
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+	private boolean CanFindTheBug(int EInsp, List<TraceNode> old_visited, List<TraceNode> new_visited,List<TraceNode> old_retained, List<TraceNode> new_retained) {
+		boolean found = false;
+		int count_old = 0;
+		int count_new = 0;
+		Collections.sort(old_visited, new TraceNodeOrderComparator());
+		Collections.sort(new_visited, new TraceNodeOrderComparator());
+		if(old_visited.size()-EInsp>=0)
+			for(int i=old_visited.size()-1;i>=old_visited.size()-EInsp;i--) {
+				if(old_retained.contains(old_visited.get(i)))
+					count_old ++;
+			}
+		else
+			for(int i=old_visited.size()-1;i>=0;i--) {
+				if(old_retained.contains(old_visited.get(i)))
+					count_old ++;
+			}
+		if(new_visited.size()-EInsp>=0)
+			for(int i=new_visited.size()-1;i>=new_visited.size()-EInsp;i--) {
+				if(new_retained.contains(new_visited.get(i)))
+					count_new ++;
+			}
+		else
+			for(int i=new_visited.size()-1;i>=0;i--) {
+				if(new_retained.contains(new_visited.get(i)))
+					count_new ++;
+			}
+		if(count_old==old_retained.size() && count_new==new_retained.size())
+			found = true;
+		return found;		
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3233,10 +4145,12 @@ public class dualSlicingWithConfigE {
 			StepChangeTypeChecker typeChecker, PairList pairList, DiffMatcher matcher, 
 			HashMap<TraceNode, List<Pair<TraceNode, String>>> old_data_map, HashMap<TraceNode, List<TraceNode>> old_ctl_map, 
 			HashMap<TraceNode, List<Pair<TraceNode, String>>> new_data_map, HashMap<TraceNode, List<TraceNode>> new_ctl_map, 
-			List<TraceNode> old_kept, List<TraceNode> new_kept, HashMap<Integer, List<TraceNode>> oldDataBlockNodes, 
+			List<TraceNode> old_kept, List<TraceNode> new_kept, List<TraceNode> inpress_keep_IDT_old_kept, List<TraceNode> inpress_keep_IDT_new_kept,
+			List<TraceNode> corex_removing_DAT_IDT_old_kept, List<TraceNode> corex_removing_DAT_IDT_new_kept,
+			HashMap<Integer, List<TraceNode>> oldDataBlockNodes, 
 			HashMap<Integer, List<TraceNode>> newDataBlockNodes,HashMap<Integer, List<TraceNode>> oldCtlBlockNodes,
 			HashMap<Integer, List<TraceNode>> newCtlBlockNodes, HashMap<Integer, List<TraceNode>> oldIdtBlockNodes,HashMap<Integer, List<TraceNode>> newIdtBlockNodes, 
-			List<TraceNode> old_retained, List<TraceNode> new_retained,List<String> old_kept_sourceCodeLevel, List<String> new_kept_sourceCodeLevel) {
+			List<TraceNode> old_retained, List<TraceNode> new_retained,List<String> old_kept_sourceCodeLevel, List<String> new_kept_sourceCodeLevel, HashMap<TraceNode, List<Pair<TraceNode, String>>> new_corex_edges, HashMap<TraceNode, List<Pair<TraceNode, String>>> old_corex_edges) {
 		
 		/////////////////////////////////////////////////////////////
 		Collections.sort(old_visited, new TraceNodeOrderComparator());
@@ -3680,575 +4594,1017 @@ public class dualSlicingWithConfigE {
 		CTLBlockID = BlockID + 1;
 		for(Integer ctlblockID:oldCtlBlockNodesTemp.keySet()) {
 			oldCtlBlockNodes.put(CTLBlockID,oldCtlBlockNodesTemp.get(ctlblockID));
+			for(TraceNode node:oldCtlBlockNodesTemp.get(ctlblockID))
+				oldBlocks.put(node, CTLBlockID);
 			CTLBlockID += 1;
 		}
 		for(Integer ctlblockID:newCtlBlockNodesTemp.keySet()) {
 			newCtlBlockNodes.put(CTLBlockID,newCtlBlockNodesTemp.get(ctlblockID));	
+			for(TraceNode node:newCtlBlockNodesTemp.get(ctlblockID))
+				newBlocks.put(node, CTLBlockID);
 			CTLBlockID += 1;
 		}
 //		System.out.println("#################after paralizing#################"); 
-		System.out.println("The # of data block in old " + oldDataBlockNodes);
-		System.out.println("The # of data block in new " + newDataBlockNodes);
-		System.out.println("The # of ctl block in old " + oldCtlBlockNodes);
-		System.out.println("The # of ctl block in new " + newCtlBlockNodes);
-		System.out.println("The # of idt block in old " + oldIdtBlockNodes);
-		System.out.println("The # of idt block in new " + newIdtBlockNodes);
-	
+//		System.out.println("The # of data block in old " + oldDataBlockNodes);
+//		System.out.println("The # of data block in new " + newDataBlockNodes);
+//		System.out.println("The # of ctl block in old " + oldCtlBlockNodes);
+//		System.out.println("The # of ctl block in new " + newCtlBlockNodes);
+//		System.out.println("The # of idt block in old " + oldIdtBlockNodes);
+//		System.out.println("The # of idt block in new " + newIdtBlockNodes);
 //		////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		////////////////////////////////////////////////////////////////////////////////////////////////////////	
 //		////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		/////////////////////abstraction////////////////////////////////////////////////////////////////
-////		PrintWriter writer;
-//		try {
-//			//should also the corresponding kept node from the other trace be add?
-//			
-////			writer = new PrintWriter(proPath+"/results/Explainations.gv", "UTF-8");
-////			writer.println("digraph dualGraph {");
-////			writer.println("rankdir = BT;");
-////			writer.println("splines=ortho;");
-//			
-//	//		Collections.sort(old_visited, new TraceNodeOrderComparator());
-//	//		Collections.sort(new_visited, new TraceNodeOrderComparator());
-//						
-//			List<TraceNode> new_dat_kept = new ArrayList<>();
-//			List<TraceNode> old_dat_kept = new ArrayList<>();
-//			
-//			HashMap<TraceNode, Integer> old_data_node_function = new HashMap<>();
-//			HashMap<TraceNode, Integer> new_data_node_function = new HashMap<>();
-//			HashMap<TraceNode, Integer> old_ctl_node_function = new HashMap<>();
-//			HashMap<TraceNode, Integer> new_ctl_node_function = new HashMap<>();
-//			Integer index = 0;
-//			////////////////////////////////////First Define what to keep////////////////////////////////////////////////
-//			for(int i=old_visited.size()-1;i>=0; i--){
-//				TraceNode step = old_visited.get(i);
-////				System.out.println("this is step: " + step);
-//				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);				
-//				String Type;
-////				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
-//				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {				
-//					old_data_node_function.put(step, index);
-//					TraceNode matchedStep = changeType.getMatchingStep();	
-//					new_data_node_function.put(matchedStep, index);
-//					index = index + 1;
-//					if(old_kept.contains(step)) {//should be added but abstracted
-//						if(!new_dat_kept.contains(matchedStep))
-//							new_dat_kept.add(matchedStep);
-//					}					
-//				}
-//				//else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
-//				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {
+			//should also the corresponding kept node from the other trace be add?
+		
+			Collections.sort(old_visited, new TraceNodeOrderComparator());
+			Collections.sort(new_visited, new TraceNodeOrderComparator());
+			
+			
+			inpress_keep_IDT_old_kept.add(old_visited.get(old_visited.size()-1));
+			inpress_keep_IDT_new_kept.add(new_visited.get(new_visited.size()-1));
+											
+			HashMap<TraceNode, List<Pair<Integer,String>>> old_data_node_function = new HashMap<>();
+			HashMap<TraceNode, List<Pair<Integer,String>>> new_data_node_function = new HashMap<>();
+			HashMap<TraceNode, List<Pair<Integer,String>>> old_ctl_node_function = new HashMap<>();
+			HashMap<TraceNode, List<Pair<Integer,String>>> new_ctl_node_function = new HashMap<>();
+//			HashMap<TraceNode, Integer> old_idt_node_function = new HashMap<>();
+//			HashMap<TraceNode, Integer> new_idt_node_function = new HashMap<>();
+			Integer index = 0;
+			
+////////////////////////////////////First Define what to keep (like inpress but just keep the identical too)////////////////////////////////////////////////
+			for(int i=old_visited.size()-1;i>=0; i--){
+				TraceNode step = old_visited.get(i);
+//				System.out.println("this is step on old: " + step);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);				
+									
+				/////////keep the dependencies in different block
+
+				List<Pair<TraceNode, String>> data_deps = old_data_map.get(step);	
+//				System.out.println("data deps: " + data_deps);
+				if(data_deps!=null) 
+					for(Pair<TraceNode, String> pair:data_deps) 
+						if(old_visited.contains(pair.first()))
+							if(oldBlocks.get(pair.first())!=oldBlocks.get(step))								
+								if(!inpress_keep_IDT_old_kept.contains(pair.first())) {										
+									inpress_keep_IDT_old_kept.add(pair.first());
+								}
+				
+				List<TraceNode> ctl_deps = old_ctl_map.get(step);
+//				System.out.println("control deps: " + ctl_deps);
+				if(changeType.getType()==StepChangeType.CTL)//if the node is control diff we also want to keep the if statement 
+					if(ctl_deps!=null) 
+						for(TraceNode node:ctl_deps) {
+							StepChangeType changeTypes = typeChecker.getTypeForPrinting(node, false, pairList, matcher);				
+							if(changeTypes.getType()==StepChangeType.DAT || changeTypes.getType()==StepChangeType.SRCDAT){//keep the control condition causing the control block
+//								System.out.println("control dep which is DAT");
+								if(old_visited.contains(node))
+									if(!inpress_keep_IDT_old_kept.contains(node)) {
+										inpress_keep_IDT_old_kept.add(node);	
+									}	
+							}
+						}				
+			}
+			
+			for(int i=new_visited.size()-1;i>=0; i--){
+				TraceNode step = new_visited.get(i);
+//				System.out.println("this is step on new: " + step);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);				
+				
+				/////////keep the dependencies
+
+				List<Pair<TraceNode, String>> data_deps = new_data_map.get(step);	
+//				System.out.println("data deps: " + data_deps);
+				if(data_deps!=null) 
+					for(Pair<TraceNode, String> pair:data_deps) 
+						if(new_visited.contains(pair.first()))
+							if(newBlocks.get(pair.first())!=newBlocks.get(step)) {
+								if(!inpress_keep_IDT_new_kept.contains(pair.first())) {										
+									inpress_keep_IDT_new_kept.add(pair.first());
+								}
+							}
+				
+				List<TraceNode> ctl_deps = new_ctl_map.get(step);
+//				System.out.println("control deps: " + ctl_deps);
+				if(changeType.getType()==StepChangeType.CTL)//if the node is control diff we also want to keep the if statement 
+					if(ctl_deps!=null) 
+						for(TraceNode node:ctl_deps) {
+							StepChangeType changeTypes = typeChecker.getTypeForPrinting(node, true, pairList, matcher);	
+							if(changeTypes.getType()==StepChangeType.DAT || changeTypes.getType()==StepChangeType.SRCDAT)//keep the control condition causing the control block
+								if(new_visited.contains(node))
+									if(!inpress_keep_IDT_new_kept.contains(node)) {
+										inpress_keep_IDT_new_kept.add(node);	
+									}							
+						}				
+			}
+			
+//			System.out.println("#################after paralizing#################"); 
+			System.out.println("The initial nodes in old " + inpress_keep_IDT_old_kept);
+			System.out.println("The initial nodes in new " + inpress_keep_IDT_new_kept);
+			Collections.sort(inpress_keep_IDT_old_kept, new TraceNodeOrderComparator());
+			Collections.sort(inpress_keep_IDT_new_kept, new TraceNodeOrderComparator());
+			
+/////////////////////////////////////Now 1) remove those matched and identical that have the same dep in both old and new and also are not reaching definition. ///////////////////////////////////////////////
+			
+			for(int i=inpress_keep_IDT_old_kept.size()-1;i>=0; i--){
+				TraceNode step = inpress_keep_IDT_old_kept.get(i);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
+				
+				if(changeType.getType()==StepChangeType.SRCCTL || changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,old_visited)) {//retain statement
+					if(changeType.getType()==StepChangeType.SRCCTL) {
+						for (VarValue var: step.getReadVariables()) {
+							List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
+							if (vars==null)
+								vars = new ArrayList<>();
+							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+							vars.add(pair);
+							old_ctl_node_function.put(step, vars);
+							index = index + 1;
+						}
+					}
+					else if(changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,old_visited)) {	
+						TraceNode matchedStep = changeType.getMatchingStep();
+						for (VarValue var: step.getReadVariables()) {
+							List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+							if (vars==null)
+								vars = new ArrayList<>();
+							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+							vars.add(pair);
+							old_data_node_function.put(step, vars);
+							new_data_node_function.put(matchedStep, vars);
+							index = index + 1;
+						}																
+//						new_data_node_function.put(matchedStep, index);
+//						index = index + 1;
+					}
+					if(!old_retained.contains(step))
+						old_retained.add(step);
+					if(!old_kept.contains(step)) {
+						old_kept.add(step);	
+						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
+							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));					
+					}
+				}
+				
+				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {
+					for (VarValue var: step.getReadVariables()) {
+						List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
+						if (vars==null)
+							vars = new ArrayList<>();
+						Pair<Integer, String> pair = new Pair(index,var.getVarName());
+						vars.add(pair);
+						old_ctl_node_function.put(step, vars);
+						index = index + 1;
+					}
 //					old_ctl_node_function.put(step, index);
 //					index = index + 1;
-//				}
-//				else if(changeType.getType()!=0) {//not identical
-//					if(!old_retained.contains(step))
-//						old_retained.add(step);
-//					if(!old_kept.contains(step)) {
-//						old_kept.add(step);	
-//						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
-//							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));
-//					
-//					}
-//				}
-//				List<Pair<TraceNode, String>> data_deps = old_data_map.get(step);	
-////				System.out.println("deps: " + data_deps);
-//				if(data_deps!=null) 
-//					for(Pair<TraceNode, String> pair:data_deps) 
-//						if(old_visited.contains(pair.first()))
-//							if(oldBlocks.get(pair.first())!=oldBlocks.get(step))//keep the dep
-//								//April 10 update
-//								if(!old_kept.contains(pair.first())) {	
-////									System.out.println(getJustSourceCode(pair.first(),false,matcher));
-//									if(getJustSourceCode(pair.first(),false,matcher).contains("return ")) {//if it is return statement, then add the defined variable					
-////										System.out.println("this is return");
-////										System.out.println(pair.first().getWrittenVariables().get(0));
-////										VarValue temp = pair.first().getWrittenVariables().get(0);										
-////										List<VarValue> writtenVar= new ArrayList<>();
-////										temp.getVariable().setName("return_"+pair.first().getMethodName());
-////										System.out.println(pair.first().getWrittenVariables());
-////										writtenVar.add(temp);
-////										pair.first().setWrittenVariables(writtenVar);
-////										System.out.println(pair.first().getWrittenVariables());
-////										System.out.println(pair.first().getReadVariables().get(0));
-////										List<Pair<TraceNode, String>> return_data_deps = old_data_map.get(pair.first());										
-////										if(return_data_deps!=null)
-////											for(Pair<TraceNode, String> reutunr_pair:return_data_deps) 
-////												if(old_visited.contains(reutunr_pair.first()))
-////													if(!old_kept.contains(reutunr_pair.first())) {
-//////														System.out.println("this is step: " + step);
-//////														System.out.println("this is the kept dep of the return: " + reutunr_pair.first());
-////														old_kept.add(reutunr_pair.first());
-////														if (!old_kept_sourceCodeLevel.contains(getSourceCode(reutunr_pair.first(),false,matcher)))
-////															old_kept_sourceCodeLevel.add(getSourceCode(reutunr_pair.first(),false,matcher));
-////													}									
-//									}
-////									else {
-////										System.out.println("this is step: " + step);
-////										System.out.println("this is the kept dep: " + pair.first());
-//										old_kept.add(pair.first());
-//										if (!old_kept_sourceCodeLevel.contains(getSourceCode(pair.first(),false,matcher)))
-//											old_kept_sourceCodeLevel.add(getSourceCode(pair.first(),false,matcher));
-////									}
-//								}
-//				
-//	//			List<TraceNode> ctl_deps = old_ctl_map.get(step);
-//	//			if(ctl_deps!=null) 
-//	//				for(TraceNode node:ctl_deps) 
-//	//					if(old_visited.contains(node))
-//	//						if(oldBlocks.get(node)!=oldBlocks.get(step))//keep the dep
-//	//							if(!old_kept.contains(node))
-//	//								old_kept.add(node);		
-//			}
-//			/////////////////////////////////////First Define what to keep///////////////////////////////////////////////
-//			for(int i=new_visited.size()-1;i>=0; i--){
-//				TraceNode step = new_visited.get(i);
-//				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);				
-//				String Type;				
-////				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
-//				if (changeType.getType() == StepChangeType.DAT && !isLastStatement(tc, step, new_visited)) {
-//					if (!new_data_node_function.keySet().contains(step)) {
-//						new_data_node_function.put(step, index);
-//						TraceNode matchedStep = changeType.getMatchingStep();	
-//						old_data_node_function.put(matchedStep, index);
+					if(!old_kept.contains(step)) {
+						old_kept.add(step);	
+						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
+							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));					
+					}
+				}
+				
+				else if ((changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited))||(changeType.getType()==StepChangeType.IDT && !isLastStatement(tc, step,old_visited))) {									
+					TraceNode matchedStep = changeType.getMatchingStep();	
+					if(!inpress_keep_IDT_new_kept.contains(matchedStep)) { //only in one trace/slice => keep
+						if(!old_kept.contains(step)) {
+							old_kept.add(step);	
+							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
+								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								old_data_node_function.put(step, vars);
+								new_data_node_function.put(matchedStep, vars);
+								index = index + 1;
+							}
+//							old_data_node_function.put(step, index);								
+//							new_data_node_function.put(matchedStep, index);
+//							index = index + 1;							
+							if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+								new_kept.add(matchedStep);
+						        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher)))
+									new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher));									
+							}							
+						}
+					}
+					else {//if the other trace contains but for different reason: from different dependency
+//						System.out.println("step is " + step);
+						boolean found = false;
+						for(TraceNode dominatee:step.getDataDominatee().keySet()) {
+							StepChangeType t = typeChecker.getTypeForPrinting(dominatee, false, pairList, matcher);
+							TraceNode matchedDominatee = t.getMatchingStep();	
+							if(matchedStep.getDataDominatee().keySet().contains(matchedDominatee)) {
+//								System.out.println("it is found in the other trace");
+								found = true;
+							}
+						}
+						if(!found) {
+							if(!old_kept.contains(step)) {
+								old_kept.add(step);	
+								if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
+									old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));	
+								for (VarValue var: step.getReadVariables()) {
+									List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+									if (vars==null)
+										vars = new ArrayList<>();
+									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+									vars.add(pair);
+									old_data_node_function.put(step, vars);
+									new_data_node_function.put(matchedStep, vars);
+									index = index + 1;
+								}
+//								old_data_node_function.put(step, index);	
+//								new_data_node_function.put(matchedStep, index);
+//								index = index + 1;							
+								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									new_kept.add(matchedStep);
+							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher)))
+										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher));									
+								}							
+							}
+						}
+					}
+					if(step.getReadVariables().size()==0) {//it is reaching definition =>keep
+						if(!old_kept.contains(step)) {
+							old_kept.add(step);	
+							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
+								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								old_data_node_function.put(step, vars);
+								new_data_node_function.put(matchedStep, vars);
+								index = index + 1;
+							}
+//							old_data_node_function.put(step, index);	
+//							new_data_node_function.put(matchedStep, index);
+//							index = index + 1;							
+							if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+								new_kept.add(matchedStep);
+						        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher)))
+									new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher));									
+							}	
+						}
+					}
+					if(step.isBranch()||step.isLoopCondition() || step.isConditional()) {// it is the control condition that makes control block => keep
+						if(!old_kept.contains(step)) {
+							old_kept.add(step);	
+							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher)))
+								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher));
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								old_data_node_function.put(step, vars);
+								new_data_node_function.put(matchedStep, vars);
+								index = index + 1;
+							}
+//							old_data_node_function.put(step, index);	
+//							new_data_node_function.put(matchedStep, index);
+//							index = index + 1;							
+							if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+								new_kept.add(matchedStep);
+						        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher)))
+									new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher));									
+							}
+						}
+					}
+					
+				}
+				
+			}
+			
+			for(int i=inpress_keep_IDT_new_kept.size()-1;i>=0; i--){
+				TraceNode step = inpress_keep_IDT_new_kept.get(i);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
+				
+				if(changeType.getType()==StepChangeType.SRCCTL || changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) {//retain statement
+					if(changeType.getType()==StepChangeType.SRCCTL) {
+						for (VarValue var: step.getReadVariables()) {
+							List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
+							if (vars==null)
+								vars = new ArrayList<>();
+							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+							vars.add(pair);
+							new_ctl_node_function.put(step, vars);
+							index = index + 1;
+						}						
+//						new_ctl_node_function.put(step, index);
 //						index = index + 1;
-//					}
-//					if (new_kept.contains(step)) {//should be added but abstracted
-//						TraceNode matchedStep = changeType.getMatchingStep();	
-//						if(!old_dat_kept.contains(matchedStep))
-//							old_dat_kept.add(matchedStep);
-//					}					
-//				}
-////				 else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
-//				else if (changeType.getType() == StepChangeType.CTL && !isLastStatement(tc, step, new_visited)) {
+					}
+					else if(changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) {
+						TraceNode matchedStep = changeType.getMatchingStep();	
+						if (!new_data_node_function.containsKey(step)) {
+							for (VarValue var: step.getReadVariables()) {
+								List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+								if (vars==null)
+									vars = new ArrayList<>();
+								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+								vars.add(pair);
+								new_data_node_function.put(step, vars);
+								old_data_node_function.put(matchedStep, vars);
+								index = index + 1;
+							}
+//							new_data_node_function.put(step, index);														
+//							old_data_node_function.put(matchedStep, index);
+//							index = index + 1;
+						}
+					}
+					
+					if(!new_retained.contains(step))
+						new_retained.add(step);
+					if(!new_kept.contains(step)) {
+						new_kept.add(step);	
+						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
+							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));					
+					}
+				}
+				
+				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,new_visited)) {
+					for (VarValue var: step.getReadVariables()) {
+						List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
+						if (vars==null)
+							vars = new ArrayList<>();
+						Pair<Integer, String> pair = new Pair(index,var.getVarName());
+						vars.add(pair);
+						new_ctl_node_function.put(step, vars);
+						index = index + 1;
+					}
 //					new_ctl_node_function.put(step, index);
 //					index = index + 1;
-//				}
-//				else if(changeType.getType()!=0) {//not identical				
-//					if(!new_retained.contains(step)) {				
-//						new_retained.add(step);
-//					}
-//					if(!new_kept.contains(step)) {
-//						new_kept.add(step);
-//						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
-//							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));					
-//					}
-//				}
-//				List<Pair<TraceNode, String>> data_deps = new_data_map.get(step);				
-//				if(data_deps!=null) 
-//					for(Pair<TraceNode, String> pair:data_deps) 
-//						if(new_visited.contains(pair.first()))
-//							if(newBlocks.get(pair.first())!=newBlocks.get(step))//keep the dep
-//								//April 10 update
-//								if(!new_kept.contains(pair.first())) {
-//									if(getJustSourceCode(pair.first(),true,matcher).contains("return ")) {//if it is return statement, then add the defined variable
-////										VarValue temp = pair.first().getReadVariables().get(0);										
-////										List<VarValue> writtenVar= new ArrayList<>();
-////										temp.getVariable().setName("return_"+pair.first().getMethodName());
-////										System.out.println(pair.first().getWrittenVariables());
-////										writtenVar.add(temp);
-////										pair.first().setWrittenVariables(writtenVar);
-////										System.out.println(pair.first().getReadVariables().get(0));
-////										List<Pair<TraceNode, String>> return_data_deps = new_data_map.get(pair.first());
-////										if(return_data_deps!=null)
-////											for(Pair<TraceNode, String> reutunr_pair:return_data_deps) 
-////												if(new_visited.contains(reutunr_pair.first()))
-////													if(!new_kept.contains(reutunr_pair.first())) {
-//////														System.out.println("this is step: " + step);
-//////														System.out.println("this is the kept dep of the return: " + reutunr_pair.first());
-////														new_kept.add(reutunr_pair.first());
-////														if (!new_kept_sourceCodeLevel.contains(getSourceCode(reutunr_pair.first(),true,matcher)))
-////															new_kept_sourceCodeLevel.add(getSourceCode(reutunr_pair.first(),true,matcher));
-////													}									
-//									}
-////									else {
-////										System.out.println("this is step: " + step);
-////										System.out.println("this is the kept dep: " + pair.first());
-//										new_kept.add(pair.first());
-//										if (!new_kept_sourceCodeLevel.contains(getSourceCode(pair.first(),true,matcher)))
-//											new_kept_sourceCodeLevel.add(getSourceCode(pair.first(),true,matcher));
-////									}
-//								}
-//				
-//	//			List<TraceNode> ctl_deps = new_ctl_map.get(step);
-//	//			if(ctl_deps!=null) 
-//	//				for(TraceNode node:ctl_deps) 
-//	//					if(new_visited.contains(node))
-//	//						if(newBlocks.get(node)!=newBlocks.get(step))//keep the dep
-//	//							if(!new_kept.contains(node))
-//	//								new_kept.add(node);		
-//			}
-//			/////////////////////////////////////////////////////////////
-//	/////////////////////////////////////////////////////////////
-//	//Add test statements becasue they are in the dual slice//////
-////			System.out.println(old_dat_kept);
-////			System.out.println(new_dat_kept);
-//			for(TraceNode n: old_dat_kept) {
-//				if(!old_kept.contains(n)) {
-//				  old_kept.add(n);
-//				  if (!old_kept_sourceCodeLevel.contains(getSourceCode(n,false,matcher)))
-//						old_kept_sourceCodeLevel.add(getSourceCode(n,false,matcher));					
-//				
-//				  }
-//			}
-//			for(TraceNode n: new_dat_kept) {
-//				if(!new_kept.contains(n)) {
-//				  new_kept.add(n);
-//				  if (!new_kept_sourceCodeLevel.contains(getSourceCode(n,true,matcher)))
-//						new_kept_sourceCodeLevel.add(getSourceCode(n,true,matcher));
-//								
-//				}
-//			}
-//			if (old_kept.size()==0) {				
-//			    old_kept.add(old_visited.get(old_visited.size()-1));
-//			    if (!old_kept_sourceCodeLevel.contains(getSourceCode(old_visited.get(old_visited.size()-1),false,matcher)))
-//					old_kept_sourceCodeLevel.add(getSourceCode(old_visited.get(old_visited.size()-1),false,matcher));					
-//			
-////			    if(!old_retained.contains(old_visited.get(old_visited.size()-1)))
-////			    	old_retained.add(old_visited.get(old_visited.size()-1));
-//			}
-//			if (new_kept.size()==0) {		
-//			    new_kept.add(new_visited.get(new_visited.size()-1));
-//			    if (!new_kept_sourceCodeLevel.contains(getSourceCode(new_visited.get(new_visited.size()-1),true,matcher)))
-//					new_kept_sourceCodeLevel.add(getSourceCode(new_visited.get(new_visited.size()-1),true,matcher));
-////			    
-////			    if(!new_retained.contains(new_visited.get(new_visited.size()-1)))
-////			    	new_retained.add(new_visited.get(new_visited.size()-1));
-//			}
-//					
-//	//		Collections.sort(old_visited, new TraceNodeOrderComparator());
-//	//		Collections.sort(new_visited, new TraceNodeOrderComparator());
-//			Collections.sort(old_kept, new TraceNodeOrderComparator());
-//			Collections.sort(new_kept, new TraceNodeOrderComparator());
-////			System.out.println(old_kept);
-//			////////////////////////add nodes of old with abstraction/////////////////////
-//			PrintWriter fileWriter = new PrintWriter(proPath + "/results/old/inPreSS.txt", "UTF-8");		
-////			writer.println("subgraph cluster0 {");
-////			writer.println("color=black;");
-////			writer.println("label = \"old slice\";");
-//			List<String> tempInPreSS = new ArrayList<String>();
-//			for(int i=old_kept.size()-1;i>=0; i--){
-//				TraceNode step = old_kept.get(i);
-//				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-////				String Type;
-////				if(changeType.getType()==StepChangeType.DAT && !isATestStatement(tc, step)) {
-//				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {
-//					//if (old_kept.contains(step) || old_dat_kept.contains(step)) {//should be added but abstracted					
-////						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
-//						List<VarValue> written = step.getWrittenVariables();
-//						List<String> vars = new ArrayList<>(); 
-//						List<TraceNode> visited = new ArrayList<>();
-//						try {
-//							visited.add(step);
-//							List<Pair<TraceNode, String>> temp = addVariable(visited,step,vars,old_data_map,oldBlocks,old_kept, old_dat_kept);
-//						}
-//						catch (StackOverflowError e) {
-//					        System.err.println("oche!");
-//					    }
-//						String abstraction = "";
-//						if (written!=null && written.size()!=0 ) { //is an assignment
-//							abstraction = written.get(0).getVarName();
-//							abstraction = abstraction + "=Func_"+old_data_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//						}					
-//						else {
-//							abstraction = abstraction + "Func_"+old_data_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//							
-//						}
-////						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";					
-////						String fixNode = step.toString();	
-////						writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");										
-//						tempInPreSS.add(abstraction);
-////						fileWriter.println(abstraction);
-//									
-//				}
-////				else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
-//				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {
-//					//if (old_kept.contains(step)) {//should be added but abstracted					
-////						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
-//						List<VarValue> written = step.getWrittenVariables();					
-//						List<String> vars = new ArrayList<>(); 
-//						List<TraceNode> visited = new ArrayList<>();
-//						try {
-//							visited.add(step);
-//							List<Pair<TraceNode, String>> temp = addVariable(visited,step,vars,old_data_map,oldBlocks,old_kept, old_dat_kept);
-//						}
-//						catch (StackOverflowError e) {
-//					        System.err.println("oche!");
-//					    }
-//						String abstraction = "";
-//						if (written!=null && written.size()!=0) { //is an assignment
-//							abstraction = written.get(0).getVarName();
-//							abstraction = abstraction + "=Func_"+old_ctl_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//							String fixNode = step.toString();	
-////							writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");
-//						}
-//						else {
-//							abstraction = abstraction + "Func_"+old_ctl_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-////							String fixNode = step.toString();	
-////							writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");
-//							//abstraction = getSourceCode(step, false, matcher, oldSlicer4J, oldSlicer4JBytecodeMapping);							
-//						}
-////						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
-////						String fixNode = step.toString();	
-////						writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");
-//						tempInPreSS.add(abstraction);
-////						fileWriter.println(abstraction);										
-//					
-//				}
-//				else {//retained set 				
-////					if (changeType.getType()==StepChangeType.SRCDAT || i==old_visited.size()-1) 
-////						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
-////					else if (changeType.getType()==StepChangeType.SRCCTL) 
-////						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					
-////					else //(changeType.getType()==StepChangeType.IDT)
-////						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					
-////					String fixNode = step.toString();			
-////					writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+"\"];");										
-//					tempInPreSS.add(getSourceCode(step, false, matcher));
-////					fileWriter.println(getSourceCode(step, false, matcher));//add the node itself
-//				}	
-//			}
-////			writer.println("}");	
-//			for(int j=tempInPreSS.size()-1;j>=0;j--)
-//				fileWriter.println(tempInPreSS.get(j));
-//			fileWriter.close();
-//			/////////////////////////////////////////////////////////////
-//			////////////////////////add nodes of new/////////////////////
-//			fileWriter = new PrintWriter(proPath + "/results/new/inPreSS.txt", "UTF-8");
-////			writer.println("subgraph cluster1 {");
-////			writer.println("color=black;");
-////			writer.println("label = \"newslice\";");
-//			tempInPreSS = new ArrayList<String>();
-//			for(int i=new_kept.size()-1;i>=0; i--){
-//				TraceNode step = new_kept.get(i);
-//				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-////				String Type;
-////				if (changeType.getType()==StepChangeType.DAT && !isATestStatement(tc, step)) {
-//				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,new_visited)) {
-//					//if (new_kept.contains(step) || new_dat_kept.contains(step)) {//should be added but abstracted
-//						//ABSTRACTION 						
-////						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
-//						List<VarValue> written = step.getWrittenVariables();
-//						List<String> vars = new ArrayList<>(); 
-//						List<TraceNode> visited = new ArrayList<>();
-//						try {
-//							visited.add(step);
-//							List<Pair<TraceNode, String>> temp = addVariable(visited, step,vars,new_data_map,newBlocks,new_kept, new_dat_kept);
-//						}
-//						catch (StackOverflowError e) {
-//					        System.err.println("oche!");
-//					    }
-//						String abstraction = "";
-//						if (written!=null&& written.size()!=0) { //is an assignment
-//							abstraction = written.get(0).getVarName();
-//							abstraction = abstraction + "=Func_"+new_data_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//						}
-//						else {
-//							abstraction = abstraction + "Func_"+new_data_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//							//abstraction = getSourceCode(step, true, matcher, newSlicer4J, newSlicer4JBytecodeMapping);
-//						}
-////						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";					
-////						String fixNode = step.toString();	
-////						writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");										
-//						tempInPreSS.add(abstraction);
-////						fileWriter.println(abstraction);
-//					
-//				}
-////				else if (changeType.getType()==StepChangeType.CTL && !isATestStatement(tc, step)) {
-//				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,new_visited)) {
-//					if (new_kept.contains(step)) {//should be added but abstracted					
-////						Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";
-//						List<VarValue> written = step.getWrittenVariables();
-//						List<ValueBox> writtenSoot = new ArrayList<>();
-//						List<String> vars = new ArrayList<>(); 
-//						List<TraceNode> visited = new ArrayList<>();
-//						try {
-//							visited.add(step);
-//							List<Pair<TraceNode, String>> temp = addVariable(visited,step,vars,new_data_map,newBlocks,new_kept, new_dat_kept);
-//						}
-//						catch (StackOverflowError e) {
-//					        System.err.println("oche!");
-//					    }
-//						String abstraction = "";
-//						if (written!=null && written.size()!=0) { //is an assignment
-//							abstraction = written.get(0).getVarName();
-//							abstraction = abstraction + "=Func_"+new_ctl_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//						}
-//						else if (writtenSoot.size()!=0){
-//							abstraction = writtenSoot.get(0).getValue().toString();
-//							abstraction = abstraction + "=Func_"+new_ctl_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//						}
-//						else {
-//							abstraction = abstraction + "=Func_"+new_ctl_node_function.get(step)+"(";
-//							for(int j=0; j<vars.size();j++) {
-//								if(j!=vars.size()-1)
-//									abstraction = abstraction + vars.get(j) + ", ";
-//								else
-//									abstraction = abstraction + vars.get(j);
-//							}
-//							abstraction = abstraction + ");";
-//							//abstraction = getSourceCode(step, true, matcher, newSlicer4J, newSlicer4JBytecodeMapping);
-//						}
-////						Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";
-////						String fixNode = step.toString();	
-////						writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+abstraction+"\"];");										
-//						tempInPreSS.add(abstraction);
-////						fileWriter.println(abstraction);
-//					}
-//				}
-//				else {//retained set 
-////					if (changeType.getType()==StepChangeType.SRCDAT || i==new_visited.size()-1) 
-////						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 
-////					else if (changeType.getType()==StepChangeType.SRCCTL) 
-////						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
-////					else //(changeType.getType()==StepChangeType.IDT)
-////						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";
-////					String fixNode = step.toString();			
-////					writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+"\"];");										
-//					tempInPreSS.add(getSourceCode(step, true, matcher));
-////					fileWriter.println(getSourceCode(step, true, matcher));
-//				}
-//			}
-////			writer.println("}");
-//			for(int j=tempInPreSS.size()-1;j>=0;j--)
-//				fileWriter.println(tempInPreSS.get(j));
-//			fileWriter.close();
-//			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//			/////////////////////////add control flow edges//////////////
-//	//		Collections.sort(old_kept, new TraceNodeOrderComparator());
-//	//		Collections.sort(new_kept, new TraceNodeOrderComparator());
-//			
-////			for(int i=0;i<old_kept.size(); i++) {
-////				if(i!=old_kept.size()-1) {
-////					TraceNode step = old_kept.get(i);
-////					TraceNode BeforeStep = old_kept.get(i+1);
-//////					writer.println("\"OldNode: "+BeforeStep +"\" " + "->" + "\"OldNode: "+step +"\" [color=gray55 style=dotted arrowhead=normal dir=back];");
-////				}
-////			}
-////			for(int i=0;i<new_kept.size(); i++) {
-////				if(i!=new_kept.size()-1) {
-////					TraceNode step = new_kept.get(i);
-////					TraceNode BeforeStep = new_kept.get(i+1);
-//////					writer.println("\"NewNode: "+BeforeStep +"\" " + "->" + "\"NewNode: "+step +"\" [color=gray55 style=dotted arrowhead=normal dir=back] ;");
-////				}
-////			}
-//			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//			/////////////////////////add alignment edges//////////////////////////////////////////////////////////////////////////////
-////			for(int i=0;i<old_kept.size(); i++) {
-////				TraceNode step = old_kept.get(i);
-////				StepChangeType changeType = typeChecker.getType(step, false, pairList, matcher);
-////				TraceNode matchedStep = changeType.getMatchingStep();
-////				if(new_kept.contains(matchedStep)) {										
-//////					writer.println("\"OldNode: "+step +"\" " + "->" + "\"NewNode: "+matchedStep +"\" [color=grey55 style=dotted arrowhead=none constraint=false];");
-////				}
-////			}
-//			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//			/////////////////////////add dependency edges////////////////
-//	//		for(int i=0;i<old_kept.size(); i++) {
-//	//			TraceNode step = old_kept.get(i);
-//	//			if(old_data_map.keySet().contains(step)) 
-//	//				if(old_data_map.get(step)!=null)
-//	//					for(Pair<TraceNode, String> dep: old_data_map.get(step)) 
-//	//						if(old_kept.contains(dep.first())) 		
-//	//							//if (!dep.second().contains("stack"))
-//	//								writer.println("\"OldNode: "+step +"\" " + "-> " + "\"OldNode: "+dep.first() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");//connect data nodes to east					
-//	//			if(old_ctl_map.keySet().contains(step)) 
-//	//				if(old_ctl_map.get(step)!=null)
-//	//					for(TraceNode dep: old_ctl_map.get(step)) 
-//	//						if(old_kept.contains(dep)) 						
-//	//							writer.println("\"OldNode: "+step +"\" " + "-> " + "\"OldNode: "+dep +"\" [color=black style=dashed arrowhead=normal constraint=false];");//connect data nodes to west	
-//	//		}
-//	//		
-//	//		for(int i=0;i<new_kept.size(); i++) {
-//	//			TraceNode step = new_kept.get(i);
-//	//			if(new_data_map.keySet().contains(step)) 
-//	//				if(new_data_map.get(step)!=null)
-//	//					for(Pair<TraceNode, String> dep: new_data_map.get(step)) 
-//	//						if(new_kept.contains(dep.first())) 
-//	//							//if (!dep.second().contains("stack"))
-//	//								writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep.first() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");
-//	//			if(new_ctl_map.keySet().contains(step)) 
-//	//				if(new_ctl_map.get(step)!=null)
-//	//					for(TraceNode dep: new_ctl_map.get(step)) 
-//	//						if(new_kept.contains(dep)) 
-//	//							writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep +"\" [color=black style=dashed arrowhead=normal constraint=false];");
-//	//		}
-//	
-//			/////////////////////////////////////////////////////////////////////
-////			writer.println("}");
-////			writer.close();
-//			
-//		} catch (FileNotFoundException e) {                                        
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (UnsupportedEncodingException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} 
-//	
-//	}
-//		
+					if(!new_kept.contains(step)) {
+						new_kept.add(step);	
+						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
+							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));					
+					}
+				}
+				
+				else if ((changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,new_visited))||(changeType.getType()==StepChangeType.IDT && !isLastStatement(tc, step,new_visited))) {
+					TraceNode matchedStep = changeType.getMatchingStep();	
+					if(!inpress_keep_IDT_old_kept.contains(matchedStep)) { //only in one trace/slice => keep
+						if(!new_kept.contains(step)) {
+							new_kept.add(step);	
+							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
+								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));	
+							if (!new_data_node_function.containsKey(step)) {
+								for (VarValue var: step.getReadVariables()) {
+									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+									if (vars==null)
+										vars = new ArrayList<>();
+									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+									vars.add(pair);
+									new_data_node_function.put(step, vars);
+									old_data_node_function.put(matchedStep, vars);
+									index = index + 1;
+								}
+//								new_data_node_function.put(step, index);	
+//								old_data_node_function.put(matchedStep, index);
+//								index = index + 1;	
+							}
+							if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+								old_kept.add(matchedStep);
+						        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher)))
+									old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher));									
+							}
+						}
+					}
+					else {//if the other trace contains but for different reason: from different dependency
+//						System.out.println("step is " + step);
+						boolean found = false;
+						for(TraceNode dominatee:step.getDataDominatee().keySet()) {
+							StepChangeType t = typeChecker.getTypeForPrinting(dominatee, true, pairList, matcher);
+							TraceNode matchedDominatee = t.getMatchingStep();	
+							if(matchedStep.getDataDominatee().keySet().contains(matchedDominatee))
+								found = true;
+						}
+						if(!found) {
+							if(!new_kept.contains(step)) {
+								new_kept.add(step);	
+								if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
+									new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));	
+								if (!new_data_node_function.containsKey(step)) {
+									for (VarValue var: step.getReadVariables()) {
+										List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+										if (vars==null)
+											vars = new ArrayList<>();
+										Pair<Integer, String> pair = new Pair(index,var.getVarName());
+										vars.add(pair);
+										new_data_node_function.put(step, vars);
+										old_data_node_function.put(matchedStep, vars);
+										index = index + 1;
+									}
+//									new_data_node_function.put(step, index);	
+//									old_data_node_function.put(matchedStep, index);
+//									index = index + 1;	
+								}
+								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									old_kept.add(matchedStep);
+							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher)))
+										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher));									
+								}
+							}
+						}
+					}
+					if(step.getReadVariables().size()==0) {//it is reaching definition =>keep
+						if(!new_kept.contains(step)) {
+							new_kept.add(step);	
+							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
+								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));	
+							if (!new_data_node_function.containsKey(step)) {
+								for (VarValue var: step.getReadVariables()) {
+									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+									if (vars==null)
+										vars = new ArrayList<>();
+									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+									vars.add(pair);
+									new_data_node_function.put(step, vars);
+									old_data_node_function.put(matchedStep, vars);
+									index = index + 1;
+								}
+//								new_data_node_function.put(step, index);	
+//								old_data_node_function.put(matchedStep, index);
+//								index = index + 1;		
+							}
+							if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+								old_kept.add(matchedStep);
+						        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher)))
+									old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher));									
+							}
+						}
+					}
+					if(step.isBranch()||step.isLoopCondition() || step.isConditional()) {// it is the control condition that makes control block => keep
+						if(!new_kept.contains(step)) {
+							new_kept.add(step);	
+							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher)))
+								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher));		
+							if (!new_data_node_function.containsKey(step)) {
+								for (VarValue var: step.getReadVariables()) {
+									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+									if (vars==null)
+										vars = new ArrayList<>();
+									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+									vars.add(pair);
+									new_data_node_function.put(step, vars);
+									old_data_node_function.put(matchedStep, vars);
+									index = index + 1;
+								}
+//								new_data_node_function.put(step, index);	
+//								old_data_node_function.put(matchedStep, index);
+//								index = index + 1;	
+							}
+							if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+								old_kept.add(matchedStep);
+						        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher)))
+									old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher));									
+							}
+						}
+					}
+					
+				}
+				
+			}
+			
+//			System.out.println("#################after paralizing#################"); 
 
-		
+	        for (int i=0; i<old_kept.size(); i++) 
+	        	corex_removing_DAT_IDT_old_kept.add(old_kept.get(i));
+	        for (int i=0; i<new_kept.size(); i++) 
+	        	corex_removing_DAT_IDT_new_kept.add(new_kept.get(i));
+	        
+			System.out.println("The initial nodes in old after removing unnecessary matched and identical " + old_kept);
+			System.out.println("The initial nodes in new after removing unnecessary matched and identical  " + new_kept);
+			Collections.sort(old_kept, new TraceNodeOrderComparator());
+			Collections.sort(new_kept, new TraceNodeOrderComparator());
+			
+/////////////////////////////////////Now 2) add the context of variables we decided to keep  ///////////////////////////////////////////////
+			for(int i=old_kept.size()-1;i>=0; i--){
+				TraceNode step = old_kept.get(i);
+				old_corex_edges.put(step,null);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
+				getContext(step,old_kept,old_corex_edges,old_data_map,old_ctl_map,old_data_node_function,old_ctl_node_function,changeType);					
+			}
+			for(int i=new_kept.size()-1;i>=0; i--){
+				TraceNode step = new_kept.get(i);
+				new_corex_edges.put(step,null);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
+				getContext(step,new_kept,new_corex_edges,new_data_map,new_ctl_map,new_data_node_function,new_ctl_node_function,changeType);					
+			}
+			System.out.println("Final nodes in old " + old_kept);
+			System.out.println("Final nodes in new " + new_kept);
+/////////////////////////////////////Now 3)add edges  ///////////////////////////////////////////////
+			HashMap<String, List<String>> old_functionsVars = new HashMap<>();//keep the mapping between the _Func(vars) and list of vars
+			HashMap<String, List<String>> new_functionsVars = new HashMap<>();
+			HashMap<String, String> old_functionsDef = new HashMap<>();//keep the mapping between the Var = _Func(vars) and Var
+			HashMap<String, String> new_functionsDef = new HashMap<>();
+			for(int i=old_kept.size()-1;i>=0; i--){
+				TraceNode step = old_kept.get(i);
+				old_corex_edges.put(step,null);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
+				if(changeType.getType()==StepChangeType.DAT||changeType.getType()==StepChangeType.IDT) {
+					if(!old_data_node_function.containsKey(step)) {
+						TraceNode matchedStep = changeType.getMatchingStep();	
+						for (VarValue var: step.getReadVariables()) {
+							List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+							if (vars==null)
+								vars = new ArrayList<>();
+							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+							vars.add(pair);
+							old_data_node_function.put(step, vars);
+							new_data_node_function.put(matchedStep, vars);
+							index = index + 1;
+						}
+//						old_data_node_function.put(step, index);	
+//						new_data_node_function.put(matchedStep, index);
+//						index = index + 1;									
+					}
+				}
+				else if (changeType.getType()==StepChangeType.CTL){
+					if(!old_ctl_node_function.containsKey(step)) {
+						for (VarValue var: step.getReadVariables()) {
+							List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
+							if (vars==null)
+								vars = new ArrayList<>();
+							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+							vars.add(pair);
+							old_ctl_node_function.put(step, vars);
+							index = index + 1;
+						}
+//						old_ctl_node_function.put(step, index);	
+//						index = index + 1;			
+					}
+				}			
+				getEdges(step,old_kept,old_corex_edges,old_data_map,old_ctl_map,old_data_node_function,old_ctl_node_function,changeType,old_functionsVars,old_functionsDef);					
+			}
+			for(int i=new_kept.size()-1;i>=0; i--){
+				TraceNode step = new_kept.get(i);
+				new_corex_edges.put(step,null);
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
+				if(changeType.getType()==StepChangeType.DAT||changeType.getType()==StepChangeType.IDT) {
+					if(!new_data_node_function.containsKey(step)) {
+						TraceNode matchedStep = changeType.getMatchingStep();	
+						for (VarValue var: step.getReadVariables()) {
+							List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+							if (vars==null)
+								vars = new ArrayList<>();
+							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+							vars.add(pair);
+							new_data_node_function.put(step, vars);
+							old_data_node_function.put(matchedStep, vars);
+							index = index + 1;
+						}
+//						new_data_node_function.put(step, index);	
+//						old_data_node_function.put(matchedStep, index);
+//						index = index + 1;									
+					}
+				}
+				else if (changeType.getType()==StepChangeType.CTL){
+					if(!new_ctl_node_function.containsKey(step)) {
+						for (VarValue var: step.getReadVariables()) {
+							List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
+							if (vars==null)
+								vars = new ArrayList<>();
+							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+							vars.add(pair);
+							new_ctl_node_function.put(step, vars);
+							index = index + 1;
+						}
+//						new_ctl_node_function.put(step, index);	
+//						index = index + 1;			
+					}
+				}
+				getEdges(step,new_kept,new_corex_edges,new_data_map,new_ctl_map,new_data_node_function,new_ctl_node_function,changeType,new_functionsVars,new_functionsDef);					
+			}
+
+			System.out.println("Final edges in old are " + old_corex_edges);
+			System.out.println("Final edges in new are  " + new_corex_edges);
+////////////////////////saving/////////////////////
+			Collections.sort(old_kept, new TraceNodeOrderComparator());
+			Collections.sort(new_kept, new TraceNodeOrderComparator());
+					
+			try {
+			PrintWriter fileWriter = new PrintWriter(proPath + "/results/old/CoReX.txt", "UTF-8");
+			PrintWriter writer = new PrintWriter(proPath+"/results/Explainations.gv", "UTF-8");
+			writer.println("digraph dualGraph {");
+			writer.println("rankdir = BT;");
+			writer.println("splines=ortho;");
+			writer.println("subgraph cluster0 {");
+			writer.println("color=black;");
+			writer.println("label = \"old slice\";");
+			for(int i=0;i<=old_kept.size()-1;i++){
+				TraceNode step = old_kept.get(i);
+				boolean NotAssignemnt = false;
+//				System.out.println("step is " + step + "written is " + step.getWrittenVariables());
+				if (step.getWrittenVariables().size()!=0) {
+					if(!Pattern.compile(step.getWrittenVariables().get(0).getVarName()+ ".*=").matcher(getSourceCode(step, false, matcher)).find()) {
+//						System.out.println("is not an assignement");
+						NotAssignemnt= true;
+					}
+				}
+				if(NotAssignemnt)
+					fileWriter.println(getSourceCode(step, false, matcher) + " " + step.getWrittenVariables().toString());
+				else
+					fileWriter.println(getSourceCode(step, false, matcher));
+				String fixNode = step.toString();
+				String Type = "";
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);		
+				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {					
+					Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";																			
+				}	
+				else if (changeType.getType()==StepChangeType.IDT) {					
+					Type= "color=green fillcolor=green shape=box style=filled fontsize=10";																			
+				}					
+				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {					
+					Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";																																						
+				}
+				else {//retained set 				
+					if (changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,old_visited)) 
+						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
+					else 
+						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";									
+				}	
+				if(NotAssignemnt)
+					writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+ " " +step.getWrittenVariables().toString()+"\"];");	
+				else
+					writer.println("\"OldNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, false, matcher)+"\"];");	
+			}
+			writer.println("}");	
+			fileWriter.close();
+			/////////////////////////////////////////////////////////////
+			////////////////////////add nodes of new/////////////////////
+			fileWriter = new PrintWriter(proPath + "/results/new/CoReX.txt", "UTF-8");		
+			writer.println("subgraph cluster1 {");
+			writer.println("color=black;");
+			writer.println("label = \"new slice\";");
+			for(int i=0;i<=new_kept.size()-1;i++){
+				TraceNode step = new_kept.get(i);
+				boolean NotAssignemnt = false;
+//				System.out.println("step is " + step + "written is " + step.getWrittenVariables());
+				if (step.getWrittenVariables().size()!=0) {
+					if(!Pattern.compile(step.getWrittenVariables().get(0).getVarName()+ ".*=").matcher(getSourceCode(step, true, matcher)).find()) {
+//						System.out.println("is not an assignement");
+						NotAssignemnt= true;
+					}
+				}
+				if(NotAssignemnt)
+					fileWriter.println(getSourceCode(step, true, matcher) + " " + step.getWrittenVariables().toString());
+				else
+					fileWriter.println(getSourceCode(step, true, matcher));
+				String fixNode = step.toString();
+				String Type = "";
+				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);		
+				if(changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,new_visited)) {					
+					Type= "color=orange fillcolor=orange2 shape=box style=filled fontsize=10";																			
+				}	
+				else if (changeType.getType()==StepChangeType.IDT) {					
+					Type= "color=green fillcolor=green shape=box style=filled fontsize=10";																			
+				}	
+				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,new_visited)) {					
+					Type= "color=blue fillcolor=lightskyblue1 shape=box style=filled fontsize=10";																																						
+				}
+				else {//retained set 				
+					if (changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) 
+						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";					 									
+					else 
+						Type = "color=red fillcolor=white shape=box style=filled fontsize=10";									
+				}	
+				if(NotAssignemnt)
+					writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+ " " +step.getWrittenVariables().toString()+"\"];");	
+				else
+					writer.println("\"NewNode: "+fixNode +"\""+ "["+Type+ " label=\""+getSourceCode(step, true, matcher)+"\"];");	
+			}
+			writer.println("}");	
+			fileWriter.close();
+			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//////////////////////////////add control flow edges////////////////////////////////////////////////////////////////////////////////////////////				
+			for(int i=0;i<old_kept.size(); i++) {
+				if(i!=old_kept.size()-1) {
+					String step = old_kept.get(i).toString();
+					String BeforeStep = old_kept.get(i+1).toString();
+					writer.println("\"OldNode: "+BeforeStep +"\" " + "->" + "\"OldNode: "+step +"\" [style=invis];");
+				}
+			} 
+			for(int i=0;i<new_kept.size(); i++) {
+				if(i!=new_kept.size()-1) {
+					String step = new_kept.get(i).toString();
+					String BeforeStep = new_kept.get(i+1).toString();
+					writer.println("\"NewNode: "+BeforeStep +"\" " + "->" + "\"NewNode: "+step +"\" [style=invis] ;");
+				} 
+			}
+			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			/////////////////////////add alignment edges between two traces//////////////////////////////////////////////////////////////////////////////
+//			for(int i=0;i<old_kept.size(); i++) {
+//				TraceNode step = old_kept.get(i);				
+//				StepChangeType changeType = typeChecker.getType(step, false, pairList, matcher);
+//				TraceNode matchedStep = changeType.getMatchingStep();
+//				if(new_kept.contains(matchedStep)) {										
+//					writer.println("\"OldNode: "+step.toString() +"\" " + "->" + "\"NewNode: "+matchedStep.toString() +"\" [color=grey55 style=dotted arrowhead=none constraint=true];");
+//				}
+//			}
+			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			/////////////////////////add dependency edges////////////////
+			for(int i=0;i<old_kept.size(); i++) {
+				TraceNode step = old_kept.get(i);
+				if(old_corex_edges.keySet().contains(step)) 
+					if(old_corex_edges.get(step)!=null)
+						for(Pair<TraceNode, String> dep: old_corex_edges.get(step)) 
+							if(old_kept.contains(dep.first())) 		
+								if (dep.second().contains("CONTROL")) {
+									StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
+									if(changeType.getType()==StepChangeType.CTL)//only these ctl edges are important
+										writer.println("\"OldNode: "+step.toString() +"\" " + "-> " + "\"OldNode: "+dep.first().toString() +"\" [color=black style=dashed arrowhead=normal constraint=false];");//connect control nodes to west	
+								}
+								else
+									writer.println("\"OldNode: "+step.toString() +"\" " + "-> " + "\"OldNode: "+dep.first().toString() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");//connect data nodes to east																		
+			}
+			
+			for(int i=0;i<new_kept.size(); i++) {
+				TraceNode step = new_kept.get(i);
+				if(new_corex_edges.keySet().contains(step)) 
+					if(new_corex_edges.get(step)!=null)
+						for(Pair<TraceNode, String> dep: new_corex_edges.get(step)) 
+							if(new_kept.contains(dep.first())) 		
+								if (dep.second().contains("CONTROL")) {
+									StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
+									if(changeType.getType()==StepChangeType.CTL)//only these ctl edges are important
+									writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep.first().toString() +"\" [color=black style=dashed arrowhead=normal constraint=false];");//connect control nodes to west	
+								}
+								else
+									writer.println("\"NewNode: "+step +"\" " + "-> " + "\"NewNode: "+dep.first().toString() +"\" [color=black style=solid arrowhead=normal constraint=false xlabel=\" "+dep.second() +"   \" ];");//connect data nodes to east																		
+			}
+			/////////////////////////////////////////////////////////////////////
+			writer.println("}");
+			writer.close();
+			
+		} catch (FileNotFoundException e) {                                        
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	private void getEdges(TraceNode step, List<TraceNode> kept, HashMap<TraceNode, List<Pair<TraceNode, String>>> corex_edges, HashMap<TraceNode, List<Pair<TraceNode, String>>> data_map, HashMap<TraceNode, List<TraceNode>> ctl_map, HashMap<TraceNode, List<Pair<Integer, String>>> data_node_function, HashMap<TraceNode, List<Pair<Integer, String>>> ctl_node_function, StepChangeType changeType, HashMap<String, List<String>> functionsVars, HashMap<String, String>functionsDef) {
+//		System.out.println("Node is " + step);
+		List<Pair<TraceNode, String>> data_deps = data_map.get(step);	
+//		System.out.println("the current data dep is " + data_deps);
+		if(data_deps!=null) {
+			for(Pair<TraceNode, String> pair:data_deps) {
+//				System.out.println("The dep node is " + pair.first());
+				String variable = "";
+				if (pair.second().contains("#")) {
+					String[] temp = pair.second().split("#");//for those return statement
+					variable = temp[temp.length-1].split("\\(")[0] + " Return";
+				}
+				else
+					variable = pair.second();
+				if(kept.contains(pair.first())){//it is already kept in the trace, simple edge
+//					System.out.println("it is already kept");
+					List<Pair<TraceNode, String>> dataDeps = corex_edges.get(step);
+					if(dataDeps==null) {
+						dataDeps = new ArrayList<>();
+					}	
+					Pair<TraceNode, String> keyPair = new Pair(pair.first(), variable);						
+					dataDeps.add(keyPair);					
+					corex_edges.put(step, dataDeps);		
+				}
+				else {//transitive keep => compound edge => _Func
+					getTransitiveEdges(step, pair.first(), variable, kept, corex_edges,data_map,ctl_map,data_node_function,ctl_node_function,changeType,functionsVars,functionsDef);							
+				}							
+			}
+		}
+		List<TraceNode> control_deps = ctl_map.get(step);	
+		if(control_deps!=null) {
+			for(TraceNode ctlNode:control_deps) {
+				if(kept.contains(ctlNode)){//it is already kept in the trace => control edge
+					List<Pair<TraceNode, String>> Deps = corex_edges.get(step);
+					if(Deps==null) {
+						Deps = new ArrayList<>();
+					}			
+					Deps.add(new Pair(ctlNode, "CONTROL"));					
+					corex_edges.put(step, Deps);
+				}							
+			}
+		}
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	private void getTransitiveEdges(TraceNode step, TraceNode first, String variable2Look, List<TraceNode> kept,
+			HashMap<TraceNode, List<Pair<TraceNode, String>>> corex_edges,
+			HashMap<TraceNode, List<Pair<TraceNode, String>>> data_map, HashMap<TraceNode, List<TraceNode>> ctl_map, HashMap<TraceNode, List<Pair<Integer, String>>> data_node_function, HashMap<TraceNode, List<Pair<Integer, String>>> ctl_node_function, StepChangeType changeType, HashMap<String, List<String>> functionsVars, HashMap<String, String> functionsDef) {
+//		System.out.println("head Node is " + step);
+//		System.out.println("Node is " + first);
+		List<Pair<TraceNode, String>> data_deps = data_map.get(first);	
+//		System.out.println("the current data dep is " + data_deps);
+		if(data_deps!=null) {
+			for(Pair<TraceNode, String> pair:data_deps) {
+//				System.out.println("The dep node is " + pair.first());
+				if(kept.contains(pair.first())){//it is already kept in the trace 
+					List<Pair<TraceNode, String>> dataDeps = corex_edges.get(step);
+					if(dataDeps==null) {
+						dataDeps = new ArrayList<>();
+					}		
+					if(changeType.getType()==StepChangeType.DAT||changeType.getType()==StepChangeType.IDT||changeType.getType()==StepChangeType.SRCDAT) {
+				    	boolean fully_found = false;
+				    	boolean node_found = false;
+				    	String previous_function = "";
+				    	Pair<TraceNode, String> found_node = null;
+					    for(Pair<TraceNode, String> dep: dataDeps) {
+					    	if(pair.first().equals(dep.first())) {//the node is already added between step and pair.first
+//					    		System.out.println("already kept");
+					    		if(functionsDef.containsKey(dep.second())) {
+						    		if(functionsDef.get(dep.second()).equals(variable2Look) && functionsVars.containsKey(dep.second())) {//there is compound transitive edge between these two nodes
+							    		if(functionsVars.get(dep.second()).contains(pair.second())) {//the variable pair.second was already visited and in the list 
+//							    			System.out.println("already kept " + pair.second());
+							    			fully_found = true;		
+							    		}
+						    		    else {
+							    			node_found = true;
+								    		previous_function = dep.second();
+								    		found_node = dep;
+						    		    }
+						    	    }
+					    	    }	
+					        }
+					    }
+					    if (!fully_found) {//if fully found do nothing, it is repetitive
+					    	String function = "";
+				    		if(node_found && previous_function.contains("Func")) {//merge different compound data edges to the same node
+//				    		   System.out.println("found node");
+//				    		   System.out.println(dataDeps);
+				    		   dataDeps.remove(found_node);//remove previous edge		
+//				    		   System.out.println(dataDeps);
+				    		   List<String> previous_vars = functionsVars.get(previous_function);//get list of vars of previous function
+				    		   previous_vars.add(pair.second());
+				    		   int index = 0;
+				    		   for(Pair<Integer, String> variableIndex:data_node_function.get(step))
+				    			   if (variableIndex.second().equals(variable2Look))
+				    				   index = variableIndex.first();
+				    		   function = variable2Look+"=Func_" + index + "(";
+								for(int j=0; j<previous_vars.size();j++) {
+									if(j!=previous_vars.size()-1)
+										function = function + previous_vars.get(j) + ", ";
+									else
+										function = function + previous_vars.get(j);
+								}
+							   function = function + ")";
+				    		   functionsVars.put(function, previous_vars);//update the function with the previous
+				    		}
+				    		else {//the first compound data edge between these two nodes
+				    			int index = 0;
+					    		for(Pair<Integer, String> variableIndex:data_node_function.get(step))
+					    			if (variableIndex.second().equals(variable2Look))
+					    				index = variableIndex.first();
+				    			 function = variable2Look+"=Func_" + index + "(" + pair.second() + ")";
+				    			 List<String> vars = new ArrayList();
+					    		 vars.add(pair.second());
+					    		 functionsVars.put(function, vars);
+					    		 functionsDef.put(function, variable2Look);
+				    		}
+			    			Pair<TraceNode, String> keyPair = new Pair(pair.first(), function);						
+							dataDeps.add(keyPair);					
+							corex_edges.put(step, dataDeps);				    		
+				    	}						
+					}
+					else if(changeType.getType()==StepChangeType.CTL||changeType.getType()==StepChangeType.SRCCTL) {
+				    	boolean fully_found = false;
+				    	boolean node_found = false;
+				    	String previous_function = "";
+				    	Pair<TraceNode, String> found_node = null;
+					    for(Pair<TraceNode, String> dep: dataDeps) {
+					    	if(pair.first().equals(dep.first())) {//the node is already added between step and pair.first
+					    		if(functionsDef.containsKey(dep.second())) {
+						    		if(functionsDef.get(dep.second()).equals(variable2Look) && functionsVars.containsKey(dep.second())) {//there is compound transitive edge between these two nodes
+							    		if(functionsVars.get(dep.second()).contains(pair.second())) {//the variable pair.second was already visited and in the list 
+							    			fully_found = true;		
+							    		}
+						    		    else {
+							    			node_found = true;
+								    		previous_function = dep.second();
+								    		found_node = dep;
+						    		    }
+						    	    }
+					    	    }	
+					        }
+					    }
+					    if (!fully_found) {//if fully found do nothing, it is repetitive
+					    	String function = "";
+				    		if(node_found && previous_function.contains("Func")) {//merge different compound data edges to the same node
+				    		   dataDeps.remove(found_node);//remove previous edge			    		   
+				    		   List<String> previous_vars = functionsVars.get(previous_function);//get list of vars of previous function
+				    		   previous_vars.add(pair.second());
+				    		   int index = 0;
+					    	   for(Pair<Integer, String> variableIndex:ctl_node_function.get(step))
+					    			if (variableIndex.second().equals(variable2Look))
+					    				index = variableIndex.first();
+				    		   function = variable2Look+"=Func_" + index + "(";
+								for(int j=0; j<previous_vars.size();j++) {
+									if(j!=previous_vars.size()-1)
+										function = function + previous_vars.get(j) + ", ";
+									else
+										function = function + previous_vars.get(j);
+								}
+							   function = function + ")";
+				    		   functionsVars.put(function, previous_vars);//update the function with the previous
+				    		}
+				    		else {//the first compound data edge between these two nodes
+				    			int index = 0;
+				    			for(Pair<Integer, String> variableIndex:ctl_node_function.get(step))
+					    			if (variableIndex.second().equals(variable2Look))
+					    				index = variableIndex.first();
+				    			 function = variable2Look+"=Func_" + index + "(" + pair.second() + ")";
+				    			 List<String> vars = new ArrayList();
+					    		 vars.add(pair.second());
+					    		 functionsVars.put(function, vars);
+					    		 functionsDef.put(function, variable2Look);
+				    		}
+			    			Pair<TraceNode, String> keyPair = new Pair(pair.first(), function);						
+							dataDeps.add(keyPair);					
+							corex_edges.put(step, dataDeps);				    		
+				    	}						
+					}
+				}
+				else {//transitive keep
+					getTransitiveEdges(step, pair.first(), variable2Look, kept, corex_edges,data_map,ctl_map, data_node_function, ctl_node_function, changeType,functionsVars,functionsDef);
+				}												
+			}
+		}
+
+	}
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	private void getContext(TraceNode step, List<TraceNode> kept, HashMap<TraceNode, List<Pair<TraceNode, String>>> corex_edges, HashMap<TraceNode, List<Pair<TraceNode, String>>> data_map, HashMap<TraceNode, List<TraceNode>> ctl_map, HashMap<TraceNode, List<Pair<Integer, String>>> old_data_node_function, HashMap<TraceNode, List<Pair<Integer, String>>> old_ctl_node_function, StepChangeType changeType) {
+//		System.out.println("Node is " + step);
+		List<Pair<TraceNode, String>> data_deps = data_map.get(step);	
+//		System.out.println("the current data dep is " + data_deps);
+		if(data_deps!=null) {
+			for(Pair<TraceNode, String> pair:data_deps) {
+//				System.out.println("The dep node is " + pair.first());
+				if(pair.first().getReadVariables().size()==0) {//it is reaching definition and need to be kept
+					if(!kept.contains(pair.first())) {
+						kept.add(pair.first());
+					}
+				}
+				if(step.getInvocationParent()!=null) {
+					if(!step.getInvocationParent().equals(pair.first().getInvocationParent())){//pair.first() is a method invocation => keep it
+						if(!kept.contains(pair.first())) {
+							kept.add(pair.first());
+						}
+					}
+				}
+				if(!kept.contains(pair.first())){//it is not already kept in the trace 
+					getContext(pair.first(), kept, corex_edges,data_map,ctl_map,old_data_node_function,old_ctl_node_function,changeType);							
+				}							
+			}
+		}
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	private void getTransitiveContext(TraceNode step, TraceNode first, List<TraceNode> kept,
+			HashMap<TraceNode, List<Pair<TraceNode, String>>> corex_edges,
+			HashMap<TraceNode, List<Pair<TraceNode, String>>> data_map, HashMap<TraceNode, List<TraceNode>> ctl_map, HashMap<TraceNode, Integer> data_node_function, HashMap<TraceNode, Integer> ctl_node_function, StepChangeType changeType) {
+//		System.out.println("Node is " + first);
+		List<Pair<TraceNode, String>> data_deps = data_map.get(first);	
+//		System.out.println("the current data dep is " + data_deps);
+		if(data_deps!=null) {
+			for(Pair<TraceNode, String> pair:data_deps) {
+//				System.out.println("The dep node is " + pair.first());
+				if(pair.first().getReadVariables().size()==0) {//it is reaching definition and need to be kept
+					if(!kept.contains(pair.first())) {
+						kept.add(pair.first());
+					}
+				}
+				if(first.getInvocationParent()!=null) {
+					if(!first.getInvocationParent().equals(pair.first().getInvocationParent())){//pair.first() is a method invocation => keep it
+						if(!kept.contains(pair.first())) {
+							kept.add(pair.first());							
+						}
+					}
+				}
+				if(!kept.contains(pair.first())){//it is already kept in the trace 
+					getTransitiveContext(step, pair.first(), kept, corex_edges,data_map,ctl_map, data_node_function, ctl_node_function, changeType);
+				}												
+			}
+		}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4257,7 +5613,7 @@ public class dualSlicingWithConfigE {
 			HashMap<Pair<TraceNode, String>, String>> OthercashDeps, TraceNode step, Trace trace, Trace otherTrace, List<TraceNode> visited, 
 			List<TraceNode> workList, List<TraceNode> other_visited, List<TraceNode> other_workList, boolean isNew, 
 			StepChangeTypeChecker typeChecker, PairList pairList, DiffMatcher matcher, HashMap<TraceNode, List<Pair<TraceNode, String>>> data_map, 
-			HashMap<TraceNode, List<TraceNode>> ctl_map, String proPath) {
+			HashMap<TraceNode, List<TraceNode>> ctl_map, String proPath,List<TraceNode> retained) {
 		if(step==null)
 			return;
 		StepChangeType changeType = typeChecker.getType(step, isNew, pairList, matcher);	
@@ -4271,7 +5627,7 @@ public class dualSlicingWithConfigE {
 				if(!other_visited.contains(matchedStep)) { 
 					other_visited.add(matchedStep);
 					other_workList.add(matchedStep);					
-				}
+				}				
 			}		
 		}
 		////////////////////////////////////////////////////////////////////
@@ -4303,8 +5659,8 @@ public class dualSlicingWithConfigE {
 //			System.out.println("debug: node is identical");
 			TraceNode matchedStep = changeType.getMatchingStep();
 			if(!other_visited.contains(matchedStep)) { 
-			other_visited.add(matchedStep);
-			other_workList.add(matchedStep);
+				other_visited.add(matchedStep);
+				other_workList.add(matchedStep);
 			}			
 		}
 		////////////////////////////////////////////////////////////////////
@@ -4340,6 +5696,11 @@ public class dualSlicingWithConfigE {
 					workList.add(d.first());
 					visited.add(d.first());						
 				}
+//				if(chgType.getType()==StepChangeType.SRC) {
+//					if(!retained.contains(d.first()))
+//						retained.add(d.first());
+//				}
+				
 //			}
 			
 			if(d.first().isException()){
