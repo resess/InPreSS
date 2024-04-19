@@ -102,7 +102,7 @@ public class StartDebugHandler extends AbstractHandler {
 						List<String> excludedClassNames = AnalysisScopePreference.getExcludedLibList();
 						InstrumentationExecutor executor = new InstrumentationExecutor(appClassPath,
 								generateTraceDir(appClassPath), "trace", includedClassNames, excludedClassNames);
-						final RunningInfo result = executor.run();
+						final RunningInfo result = executor.run(Settings.projectName);
 						
 						monitor.worked(80);
 						
@@ -210,6 +210,8 @@ public class StartDebugHandler extends AbstractHandler {
 		
 		return methodSig;
 	}
+
+
 
 	/**
 	 * This method is used to build the scope of local variables.

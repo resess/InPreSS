@@ -3572,7 +3572,7 @@ public class dualSlicingWithConfigS {
 	    		h2No_old++;	    		
 	    }
 	    int h2No_new = 0;
-	    for(TraceNode node: corex_removing_DAT_IDT_new_kept) {
+	    for(TraceNode node: inpress_keep_IDT_new_kept) {
 	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
 	    	if (changeType.getType()==StepChangeType.DAT && (!corex_removing_DAT_IDT_new_kept.contains(node)))//unnecessary data that is removed
 	    		h2No_new++;	    		
@@ -3580,13 +3580,13 @@ public class dualSlicingWithConfigS {
 	    int h2No_old_nec = 0;
 	    for(TraceNode node: corex_removing_DAT_IDT_old_kept) {
 	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
-	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL) && corex_removing_DAT_IDT_new_kept.contains(node))
+	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL))
 	    		h2No_old_nec++;	    		
 	    }
 	    int h2No_new_nec = 0;
 	    for(TraceNode node: corex_removing_DAT_IDT_new_kept) {
 	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
-	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL) && corex_removing_DAT_IDT_old_kept.contains(node))
+	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL))
 	    		h2No_new_nec++;	    		
 	    }
 	    
@@ -4643,6 +4643,8 @@ public class dualSlicingWithConfigS {
 			Collections.sort(old_visited, new TraceNodeOrderComparator());
 			Collections.sort(new_visited, new TraceNodeOrderComparator());
 			
+			List<TraceNode> new_dat_kept = new ArrayList<>();
+			List<TraceNode> old_dat_kept = new ArrayList<>();
 			
 			inpress_keep_IDT_old_kept.add(old_visited.get(old_visited.size()-1));
 			inpress_keep_IDT_new_kept.add(new_visited.get(new_visited.size()-1));
@@ -4759,6 +4761,15 @@ public class dualSlicingWithConfigS {
 						}																
 //						new_data_node_function.put(matchedStep, index);
 //						index = index + 1;
+						//the below if is just for comparing InPreSS vs InPreSS_IDT
+						if(matchedStep!=null) {
+							if(!inpress_keep_IDT_new_kept.contains(matchedStep))
+								new_dat_kept.add(matchedStep);
+							if(!new_retained.contains(matchedStep))
+								new_retained.add(matchedStep);
+							if(!new_kept.contains(matchedStep)) 
+								new_kept.add(matchedStep);
+						}
 					}
 					if(!old_retained.contains(step))
 						old_retained.add(step);
@@ -4807,12 +4818,16 @@ public class dualSlicingWithConfigS {
 							}
 //							old_data_node_function.put(step, index);								
 //							new_data_node_function.put(matchedStep, index);
-//							index = index + 1;							
-							if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-								new_kept.add(matchedStep);
-						        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-									new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
-							}							
+//							index = index + 1;	
+							if(matchedStep!=null) {
+								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									new_kept.add(matchedStep);
+							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+								}	
+								if(!inpress_keep_IDT_new_kept.contains(matchedStep))
+									new_dat_kept.add(matchedStep);
+							}
 						}
 					}
 					else {//if the other trace contains but for different reason: from different dependency
@@ -4843,12 +4858,16 @@ public class dualSlicingWithConfigS {
 								}
 //								old_data_node_function.put(step, index);	
 //								new_data_node_function.put(matchedStep, index);
-//								index = index + 1;							
-								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-									new_kept.add(matchedStep);
-							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
-								}							
+//								index = index + 1;	
+								if(matchedStep!=null) {
+									if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+										new_kept.add(matchedStep);
+								        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+											new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+									}
+									if(!inpress_keep_IDT_new_kept.contains(matchedStep))
+										new_dat_kept.add(matchedStep);
+								}
 							}
 						}
 					}
@@ -4869,12 +4888,16 @@ public class dualSlicingWithConfigS {
 							}
 //							old_data_node_function.put(step, index);	
 //							new_data_node_function.put(matchedStep, index);
-//							index = index + 1;							
-							if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-								new_kept.add(matchedStep);
-						        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-									new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
-							}	
+//							index = index + 1;		
+							if(matchedStep!=null) {
+								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									new_kept.add(matchedStep);
+							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+								}	
+								if(!inpress_keep_IDT_new_kept.contains(matchedStep))
+									new_dat_kept.add(matchedStep);
+							}
 						}
 					}
 					if(step.isBranch()||step.isLoopCondition() || step.isConditional()) {// it is the control condition that makes control block => keep
@@ -4894,11 +4917,15 @@ public class dualSlicingWithConfigS {
 							}
 //							old_data_node_function.put(step, index);	
 //							new_data_node_function.put(matchedStep, index);
-//							index = index + 1;							
-							if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-								new_kept.add(matchedStep);
-						        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-									new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+//							index = index + 1;		
+							if(matchedStep!=null) {
+								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									new_kept.add(matchedStep);
+							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+								}
+								if(!inpress_keep_IDT_new_kept.contains(matchedStep))
+									new_dat_kept.add(matchedStep);
 							}
 						}
 					}
@@ -4941,6 +4968,14 @@ public class dualSlicingWithConfigS {
 //							new_data_node_function.put(step, index);														
 //							old_data_node_function.put(matchedStep, index);
 //							index = index + 1;
+						}		
+						if(matchedStep!=null) {
+							if(!inpress_keep_IDT_old_kept.contains(matchedStep))
+								old_dat_kept.add(matchedStep);
+							if(!old_retained.contains(matchedStep))
+								old_retained.add(matchedStep);
+							if(!old_kept.contains(matchedStep)) 
+								old_kept.add(matchedStep);
 						}
 					}
 					
@@ -4994,10 +5029,14 @@ public class dualSlicingWithConfigS {
 //								old_data_node_function.put(matchedStep, index);
 //								index = index + 1;	
 							}
-							if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-								old_kept.add(matchedStep);
-						        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-									old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+							if(matchedStep!=null) {
+								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									old_kept.add(matchedStep);
+							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+								}
+								if(!inpress_keep_IDT_old_kept.contains(matchedStep))
+									old_dat_kept.add(matchedStep);
 							}
 						}
 					}
@@ -5030,10 +5069,14 @@ public class dualSlicingWithConfigS {
 //									old_data_node_function.put(matchedStep, index);
 //									index = index + 1;	
 								}
-								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-									old_kept.add(matchedStep);
-							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+								if(matchedStep!=null) {
+									if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+										old_kept.add(matchedStep);
+								        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+											old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+									}
+									if(!inpress_keep_IDT_old_kept.contains(matchedStep))
+										old_dat_kept.add(matchedStep);
 								}
 							}
 						}
@@ -5058,10 +5101,14 @@ public class dualSlicingWithConfigS {
 //								old_data_node_function.put(matchedStep, index);
 //								index = index + 1;		
 							}
-							if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-								old_kept.add(matchedStep);
-						        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-									old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+							if(matchedStep!=null) {
+								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									old_kept.add(matchedStep);
+							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+								}
+								if(!inpress_keep_IDT_old_kept.contains(matchedStep))
+									old_dat_kept.add(matchedStep);
 							}
 						}
 					}
@@ -5085,10 +5132,14 @@ public class dualSlicingWithConfigS {
 //								old_data_node_function.put(matchedStep, index);
 //								index = index + 1;	
 							}
-							if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-								old_kept.add(matchedStep);
-						        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-									old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+							if(matchedStep!=null) {
+								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+									old_kept.add(matchedStep);
+							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+								}
+								if(!inpress_keep_IDT_old_kept.contains(matchedStep))
+									old_dat_kept.add(matchedStep);
 							}
 						}
 					}
@@ -5103,6 +5154,9 @@ public class dualSlicingWithConfigS {
 	        	corex_removing_DAT_IDT_old_kept.add(old_kept.get(i));
 	        for (int i=0; i<new_kept.size(); i++) 
 	        	corex_removing_DAT_IDT_new_kept.add(new_kept.get(i));
+	        
+	        inpress_keep_IDT_old_kept.addAll(old_dat_kept);//adding the symmetric ones to the initial list to compare to original inpress
+	        inpress_keep_IDT_new_kept.addAll(new_dat_kept);//adding the symmetric ones to the initial list to compare to original inpress
 	        
 			System.out.println("The initial nodes in old after removing unnecessary matched and identical " + old_kept);
 			System.out.println("The initial nodes in new after removing unnecessary matched and identical  " + new_kept);
@@ -5124,6 +5178,9 @@ public class dualSlicingWithConfigS {
 			}
 			System.out.println("Final nodes in old " + old_kept);
 			System.out.println("Final nodes in new " + new_kept);
+			
+			
+			//not adding edges and graph (it is in dualSlicingWithConfigE
 		
 	}
 

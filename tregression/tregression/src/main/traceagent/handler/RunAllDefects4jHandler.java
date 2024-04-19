@@ -141,7 +141,7 @@ public class RunAllDefects4jHandler  extends AbstractHandler {
 		
 		RunningInfo info = null;
 		try {
-			info = executor.run();
+			info = executor.run(config.projectName);
 		} catch (StepLimitException e) {
 			e.printStackTrace();
 		}

@@ -127,18 +127,18 @@ public class InstrumentationExecutor {
 		return agentRunner;
 	}
 	
-	public RunningInfo run() throws StepLimitException {
+	public RunningInfo run(String bugPath) throws StepLimitException {
 		try {
 			agentRunner.getConfig().setDebug(Settings.isRunWtihDebugMode);
 			agentRunner.getConfig().setPort(9000);
 			
 			System.out.println("first precheck..");
-			agentRunner.precheck(null);			
+			agentRunner.precheck(null,bugPath);			
 			PrecheckInfo firstPrecheckInfo = agentRunner.getPrecheckInfo();
 			System.out.println(firstPrecheckInfo);
 			
 			System.out.println("second precheck..");					
-			agentRunner.precheck(null);
+			agentRunner.precheck(null,bugPath);
 			PrecheckInfo secondPrecheckInfo = agentRunner.getPrecheckInfo();
 			System.out.println(secondPrecheckInfo);
 			
@@ -183,11 +183,11 @@ public class InstrumentationExecutor {
 	}
 
 	
-	public PreCheckInformation runPrecheck(String dumpFile, int stepLimit) {
+	public PreCheckInformation runPrecheck(String dumpFile, String bugPath, int stepLimit) {
 		try {
 			/* test stepLimit */
 			agentRunner.addAgentParam(AgentParams.OPT_STEP_LIMIT, stepLimit);
-			if (!agentRunner.precheck(dumpFile)) {
+			if (!agentRunner.precheck(dumpFile,bugPath)) {
 				precheckInfo = new PreCheckInformation();
 				precheckInfo.setTimeout(true);
 				return precheckInfo;

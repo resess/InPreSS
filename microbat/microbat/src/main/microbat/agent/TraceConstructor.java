@@ -184,7 +184,7 @@ public class TraceConstructor {
 		agentRunner.addAgentParams(AgentParams.OPT_LOG, Arrays.asList(LogType.printProgress, LogType.info,
 				LogType.debug, LogType.error));
 		long start = System.currentTimeMillis();
-		agentRunner.precheck("E:/lyly/bugPrecheck.info");
+		agentRunner.precheck("E:/lyly/bugPrecheck.info","runClosure82");
 		PrecheckInfo info = agentRunner.getPrecheckInfo();
 		System.out.println("isTestSuccessful? " + agentRunner.isTestSuccessful());
 		System.out.println("testFailureMessage: " + agentRunner.getTestFailureMessage());
@@ -221,7 +221,7 @@ public class TraceConstructor {
 		agentRunner.addAgentParams(AgentParams.OPT_LOG, Arrays.asList(LogType.printProgress, LogType.info,
 				LogType.debug, LogType.error));
 		long start = System.currentTimeMillis();
-		agentRunner.precheck("E:/lyly/bugPrecheck.info");
+		agentRunner.precheck("E:/lyly/bugPrecheck.info","runMath100fix");
 		PrecheckInfo info = agentRunner.getPrecheckInfo();
 		System.out.println("isTestSuccessful? " + agentRunner.isTestSuccessful());
 		System.out.println("testFailureMessage: " + agentRunner.getTestFailureMessage());
@@ -258,7 +258,7 @@ public class TraceConstructor {
 		agentRunner.addAgentParams(AgentParams.OPT_LOG, Arrays.asList(LogType.printProgress, LogType.info,
 				LogType.debug, LogType.error));
 		long start = System.currentTimeMillis();
-		agentRunner.precheck("E:/lyly/bugPrecheck.info");
+		agentRunner.precheck("E:/lyly/bugPrecheck.info","runMath100buggy");
 		PrecheckInfo info = agentRunner.getPrecheckInfo();
 		System.out.println("isTestSuccessful? " + agentRunner.isTestSuccessful());
 		System.out.println("testFailureMessage: " + agentRunner.getTestFailureMessage());

@@ -65,64 +65,64 @@ public class SeparateVersionHandler extends AbstractHandler{
 				System.out.println(id);
 				String testcase = Activator.getDefault().getPreferenceStore().getString(TregressionPreference.TEST_CASE);
 				System.out.println(testcase);
-				System.out.println("working on the " + id + "th bug of " + projectName + " project.");
+				System.out.println("working on the " + id + "the bug of " + projectName + " project.");
 				Defects4jProjectConfig config = Defects4jProjectConfig.getD4JConfig(projectName, Integer.valueOf(id));
 				
 				List<EmpiricalTrial> trials = generator0.generateTrials(proPath, buggyPath, fixPath, 
 						false, true, true, 100, true, true, config, testcase);//debug: 100 => 3
-				//List<EmpiricalTrial> trials = generator0.generateTrials(buggyPath, fixPath, 
-						//false, false, false, 3, true, true, config, testcase);//debug: 100 => 3
+//				List<EmpiricalTrial> trials = generator0.generateTrials(proPath, buggyPath, fixPath, 
+//						false, false, false, 3, true, true, config, testcase);//debug: 100 => 3
 				
-				System.out.println("############");
-				System.out.println("all the trials");
-				for(int i=0; i<trials.size(); i++) {
-					System.out.println("Trial " + (i+1));
-					System.out.println(trials.get(i));
-					
-					EmpiricalTrial t = trials.get(i);
-					Trace trace = t.getBuggyTrace();
-					System.out.println("debug DeadEnd List: "+t.getDeadEndRecordList());
-					
-//					for(DeadEndRecord r: t.getDeadEndRecordList()){
-//						TraceNode breakStep = trace.getTraceNode(r.getBreakStepOrder());
-////						TraceNode occurStep = trace.getTraceNode(91);
-//						TraceNode occurStep = trace.getTraceNode(r.getOccurOrder());
-//						
-//						TraversingDistanceCalculator cal = new TraversingDistanceCalculator(trace.getAppJavaClassPath());
-//						Traverse tra = cal.calculateASTTravsingDistance(occurStep.getBreakPoint(), breakStep.getBreakPoint());
-//						
-//						DependencyCalculator dCal = new DependencyCalculator(trace.getAppJavaClassPath());
-//						Dependency dep = dCal.calculateDependency(occurStep.getBreakPoint(), breakStep.getBreakPoint());
-//						
-//						System.currentTimeMillis();
-//						break;
+//				System.out.println("############");
+//				System.out.println("all the trials");
+//				for(int i=0; i<trials.size(); i++) {
+//					System.out.println("Trial " + (i+1));
+//					System.out.println(trials.get(i));
+//					
+//					EmpiricalTrial t = trials.get(i);
+//					Trace trace = t.getBuggyTrace();
+////					System.out.println("debug DeadEnd List: "+t.getDeadEndRecordList());
+//					
+////					for(DeadEndRecord r: t.getDeadEndRecordList()){
+////						TraceNode breakStep = trace.getTraceNode(r.getBreakStepOrder());
+//////						TraceNode occurStep = trace.getTraceNode(91);
+////						TraceNode occurStep = trace.getTraceNode(r.getOccurOrder());
+////						
+////						TraversingDistanceCalculator cal = new TraversingDistanceCalculator(trace.getAppJavaClassPath());
+////						Traverse tra = cal.calculateASTTravsingDistance(occurStep.getBreakPoint(), breakStep.getBreakPoint());
+////						
+////						DependencyCalculator dCal = new DependencyCalculator(trace.getAppJavaClassPath());
+////						Dependency dep = dCal.calculateDependency(occurStep.getBreakPoint(), breakStep.getBreakPoint());
+////						
+////						System.currentTimeMillis();
+////						break;
+////					}
+//					
+//					if(!t.getDeadEndRecordList().isEmpty()){
+//						System.out.println("debug: No DeadEnd");
+//						Repository.clearCache();
+//						DeadEndRecord record = t.getDeadEndRecordList().get(0);
+//						DED datas = record.getTransformedData(trace);
+////						DED datas = new TrainingDataTransfer().transfer(record, trace);
+//						setTestCase(datas, t.getTestcase());						
+//						try {
+////							new DeadEndReporter().export(datas.getAllData(), projectName, Integer.valueOf(id));
+//							new DeadEndCSVWriter("_d4j", null).export(datas.getAllData(), projectName, id);
+//						} catch (NumberFormatException | IOException e) {
+//							e.printStackTrace();
+//						}
 //					}
-					
-					if(!t.getDeadEndRecordList().isEmpty()){
-						System.out.println("debug: No DeadEnd");
-						Repository.clearCache();
-						DeadEndRecord record = t.getDeadEndRecordList().get(0);
-						DED datas = record.getTransformedData(trace);
-//						DED datas = new TrainingDataTransfer().transfer(record, trace);
-						setTestCase(datas, t.getTestcase());						
-						try {
-//							new DeadEndReporter().export(datas.getAllData(), projectName, Integer.valueOf(id));
-							new DeadEndCSVWriter("_d4j", null).export(datas.getAllData(), projectName, id);
-						} catch (NumberFormatException | IOException e) {
-							e.printStackTrace();
-						}
-					}
-					
-				}
-				
-				try {
-					System.out.println("debug: trial recorder");
-					TrialRecorder recorder = new TrialRecorder();
-					recorder.export(trials, projectName, Integer.valueOf(id));
-					
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+//					
+//				}
+//				
+//				try {
+//					System.out.println("debug: trial recorder");
+//					TrialRecorder recorder = new TrialRecorder();
+//					recorder.export(trials, projectName, Integer.valueOf(id));
+//					
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
 				
 				return Status.OK_STATUS;
 			}

@@ -193,7 +193,7 @@
       <page
             class="tregression.preference.TregressionPreference"
             id="tregression.preference"
-            name="Tregression (Defects4j)">
+            name="t (Defects4j)">
       </page>
    </extension>
 

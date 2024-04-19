@@ -145,14 +145,13 @@ public class MicroBatUtil {
 		/**
 		 * setting junit lib into classpath
 		 */
-//		String dropinsDir = IResourceUtils.getDropinsDir();
+//		String dropinsDir = IResourceUtils.getDropinsDir();//for the plugin
 //		String dropinsDir = "/Applications/Eclipse.app/Contents/Eclipse/dropins";
+		
+		
 //		String dropinsDir = "/data/shrbadihi/projects/client_library/libre/dropins";
-//		Path currRelativePath = Paths.get("");
-//		String dropinsDir = currRelativePath.toAbsolutePath().toString()+"/lib";
-		String dropinsDir = System.getProperty("user.dir")+"/deps/lib";
-//        System.out.println(currRelativePath.toAbsolutePath().getParent().toString());
-
+		String dropinsDir = System.getProperty("user.dir")+"/deps/lib";//System.getProperty("user.dir") where you run the jar 
+		
 		
 		String junitDir = dropinsDir + File.separator + "junit_lib";
 		
