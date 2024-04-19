@@ -4912,11 +4912,11 @@ private int CalculateWastedEffort(List<TraceNode> visited, List<TraceNode> retai
 				}
 				
 			}
-//			System.out.println("steps size in new " + inpress_keep_IDT_new_kept.size());
+			System.out.println("steps size in new " + inpress_keep_IDT_new_kept.size());
 			for(int i=inpress_keep_IDT_new_kept.size()-1;i>=0; i--){
 				TraceNode step = inpress_keep_IDT_new_kept.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-				System.out.println("step in new " + step);
+//				System.out.println("step in new " + step);
 				if(changeType.getType()==StepChangeType.SRCCTL || changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) {//retain statement
 					if(changeType.getType()==StepChangeType.SRCCTL) {
 						for (VarValue var: step.getReadVariables()) {
