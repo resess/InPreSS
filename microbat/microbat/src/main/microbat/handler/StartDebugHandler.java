@@ -102,7 +102,7 @@ public class StartDebugHandler extends AbstractHandler {
 						List<String> excludedClassNames = AnalysisScopePreference.getExcludedLibList();
 						InstrumentationExecutor executor = new InstrumentationExecutor(appClassPath,
 								generateTraceDir(appClassPath), "trace", includedClassNames, excludedClassNames);
-						final RunningInfo result = executor.run(Settings.projectName);
+						final RunningInfo result = executor.run(Settings.projectName,Settings.bugID);
 						
 						monitor.worked(80);
 						

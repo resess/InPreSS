@@ -7,6 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -56,7 +57,7 @@ public class TraceAgentRunner extends AgentVmRunner {
 		super.buildVmOption(builder, config);
 	}
 
-	public boolean precheck(String filePath, String proPath) throws SavException {
+	public boolean precheck(String filePath, String proPath, String bugId) throws SavException {
 		isPrecheckMode = true;
 		try {
 			SingleTimer timer = SingleTimer.start("Precheck");
@@ -64,8 +65,8 @@ public class TraceAgentRunner extends AgentVmRunner {
 			File dumpFile;
 			boolean toDeleteDumpFile = false;
 			if (filePath == null) {
-//				System.out.println(proPath);
-				dumpFile = File.createTempFile(proPath+"tracePrecheck", ".info");
+//				System.out.println(proPath); 
+				dumpFile = File.createTempFile(proPath+bugId+"tracePrecheck", ".info");
 				toDeleteDumpFile = true;
 			} else {
 				dumpFile = FileUtils.getFileCreateIfNotExist(filePath);

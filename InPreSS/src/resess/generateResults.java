@@ -47,7 +47,7 @@ public class generateResults {
 	public void generateResult(String basePath, String projectName, String bugID, String proPath, String buggyPath, String fixPath, 
 			boolean isReuse, boolean useSliceBreaker,
 			boolean enableRandom, int breakLimit, boolean requireVisualization, 
-			boolean allowMultiThread, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual, boolean debug, String tool2Run) {
+			boolean allowMultiThread, int assertionLine, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual, boolean debug, String tool2Run) {
 		List<TestCase> tcList;
 		TestCase workingTC = null;
 		try {
@@ -58,7 +58,7 @@ public class generateResults {
 			for (TestCase tc : tcList) {
 				System.out.println("#####working on test case " + tc.testClass + "#" + tc.testMethod);
 				workingTC = tc;				 
-				analyzeTestCaseResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, isReuse, allowMultiThread,tc, 
+				analyzeTestCaseResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, isReuse, allowMultiThread,tc, assertionLine,
 						config, requireVisualization, true, useSliceBreaker, enableRandom, breakLimit, 
 						includedClassNames, excludedClassNames, eraseorDual,debug, tool2Run);		
 			    System.exit(0);
@@ -71,7 +71,7 @@ public class generateResults {
     //////////////////////////////////////////////////////////////////	
     private void analyzeTestCaseResult(String basePath, String projectName, String bugID, String proPath, String buggyPath, String fixPath, 
 			boolean isReuse, boolean allowMultiThread, 
-			TestCase tc, Defects4jProjectConfig config, boolean requireVisualization, 
+			TestCase tc, int assertionLine, Defects4jProjectConfig config, boolean requireVisualization, 
 			boolean isRunInTestCaseMode, boolean useSliceBreaker, boolean enableRandom, int breakLimit, List<String> includedClassNames, 
 			List<String> excludedClassNames, String eraseorDual,boolean debug, String tool2Run) throws Exception {
 		TraceCollector0 newCollector = new TraceCollector0(true);
@@ -94,8 +94,8 @@ public class generateResults {
 				System.exit(0);			
 			}
 			else if (e.StepLenth == -200) {
-//				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
-//				System.exit(0);			
+				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
+				System.exit(0);			
 			}
 			else {
 				saveBugAndTerminate(basePath,projectName, bugID,0,e.StepLenth);
@@ -118,8 +118,8 @@ public class generateResults {
 				System.exit(0);			
 			}
 			else if (e.StepLenth == -200) {
-//				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
-//				System.exit(0);			
+				saveMultiThreadBugAndTerminate(basePath,projectName, bugID);
+				System.exit(0);			
 			}
 			else {
 				saveBugAndTerminate(basePath,projectName, bugID,oldRs.getRunningTrace().size(),newRS.getRunningTrace().size());	
@@ -161,8 +161,9 @@ public class generateResults {
 			ControlPathBasedTraceMatcher traceMatcher = new ControlPathBasedTraceMatcher();
 			if (projectName.contentEquals("InPreSS"))
 				PairList = traceMatcher.matchTraceNodePair(newRS.getRunningTrace(), oldRs.getRunningTrace(), diffMatcher,"dual");
-			else
+			else {
 				PairList = traceMatcher.matchTraceNodePair(newRS.getRunningTrace(), oldRs.getRunningTrace(), diffMatcher,"inPreSS");
+			}
 			long trace_match_finish_time = System.currentTimeMillis();					
 			traceTime = (int) (trace_match_finish_time - trace_match_start_time);
 			System.out.println("finish matching trace, taking " + traceTime + "ms");
@@ -189,17 +190,17 @@ public class generateResults {
 		System.out.println("###############Dual slicing##################");
 		if (eraseorDual.equals("S")){
 			dualSlicingWithConfigS configS = new dualSlicingWithConfigS();
-			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
-				configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
-			else
-				configS.corex(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
+//			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
+//				configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+//			else
+				configS.corex(basePath,projectName, bugID,tc, assertionLine,true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug,tool2Run);	
 		}
 		else if (eraseorDual.equals("E")){
 			dualSlicingWithConfigE configE = new dualSlicingWithConfigE();
-			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
-				configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
-			else
-				configE.corex(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+//			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
+//				configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+//			else
+				configE.corex(basePath,projectName, bugID,tc, assertionLine,false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug,tool2Run);
 		}
 		
 		return;

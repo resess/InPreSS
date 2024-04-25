@@ -13,14 +13,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import microbat.model.trace.TraceNode;
 import microbat.model.variable.ArrayElementVar;
 import microbat.model.variable.FieldVar;
 import microbat.model.variable.LocalVar;
 import microbat.model.variable.Variable;
+import sav.common.core.Pair;
 
 /**
  * @author Yun Lin
@@ -32,6 +35,9 @@ public abstract class VarValue implements GraphNode, Serializable {
 	protected List<VarValue> parents = new ArrayList<>();
 	protected Variable variable;
 	protected List<VarValue> children = new ArrayList<>();
+	protected List<Pair<TraceNode,TraceNode>> edges = new ArrayList<>();//source (the variable is used in this line), target (the variable is defined in this line)
+	protected List<Pair<Pair<TraceNode,TraceNode>,String>> edges_lable = new ArrayList<>();
+	
 	
 	/**
 	 * indicate whether this variable is a top-level variable in certain step.
@@ -45,8 +51,9 @@ public abstract class VarValue implements GraphNode, Serializable {
 	
 	protected VarValue(boolean isRoot, Variable variable) {
 		this.isRoot = isRoot;
-		this.variable = variable;
-		
+		this.variable = variable;	
+		this.edges = new ArrayList<>();
+		this.edges_lable = new ArrayList<>();
 	}
 	
 	public abstract VarValue clone();
@@ -461,7 +468,71 @@ public abstract class VarValue implements GraphNode, Serializable {
 	public void setVariable(Variable variable) {
 		this.variable = variable;
 	}
+	public void setSourceTarget(TraceNode source, TraceNode target) {
+		Pair keyPair = new Pair<TraceNode, TraceNode>(source, target);
+		if(this.edges==null)
+			this.edges = new ArrayList();
+		this.edges.add(keyPair);
+		
+	}
+	public TraceNode getSourceofTarget(TraceNode target) {
+		for(Pair<TraceNode, TraceNode> keyPair: this.edges) {
+			if(keyPair.second().equals(target))
+				return keyPair.first();
+		}
+		return null;
+	}
+	public TraceNode getTargetofSource(TraceNode source) {
+		for(Pair<TraceNode, TraceNode> keyPair: this.edges) {
+			if(keyPair.first().equals(source))
+				return keyPair.second();
+		}
+		return null;
+	}
+	public List<TraceNode> getNodesWhereVarIsUsed() {
+		List<TraceNode> Nodes_where_var_is_used = new ArrayList<>();
+		for(Pair<TraceNode, TraceNode> keyPair: this.edges) {
+			Nodes_where_var_is_used.add(keyPair.first());
+		}
+		return Nodes_where_var_is_used;
+	}
+	public List<TraceNode> getNodesWhereVarIsDependson() {
+		List<TraceNode> Nodes_where_var_is_defined = new ArrayList<>();
+		for(Pair<TraceNode, TraceNode> keyPair: this.edges) {
+			Nodes_where_var_is_defined.add(keyPair.second());
+		}
+		return Nodes_where_var_is_defined;
+	}
+	public void setSourceTargetLable(TraceNode source, TraceNode target, String label) {
+		Pair keyPair = new Pair<TraceNode, TraceNode>(source, target);
+		Pair lable = new Pair<Pair<TraceNode, TraceNode>,String>(keyPair,label);
+		if(this.edges_lable==null)
+			this.edges_lable = new ArrayList();
+		this.edges_lable.add(lable);
+		
+	}
+	public String getLableBySource(TraceNode source) {
+		for(Pair<Pair<TraceNode, TraceNode>,String> keyPair: this.edges_lable) {
+			if(keyPair.first().first().equals(source))
+				return keyPair.second();
+		}
+		return null;
+	}
+	public String getLableByTarget(TraceNode target) {
+		for(Pair<Pair<TraceNode, TraceNode>,String> keyPair: this.edges_lable) {
+			if(keyPair.first().second().equals(target))
+				return keyPair.second();
+		}
+		return null;
+	}
 	
+	public TraceNode getSourcebyEdgeAndTarge(TraceNode target, String label) {
+		for(Pair<Pair<TraceNode, TraceNode>,String> keyPair: this.edges_lable) {
+			if(keyPair.first().second().equals(target) && keyPair.second().equals(label))
+				return keyPair.first().first();
+		}
+		return null;
+	}
 	public abstract String getHeapID();
 	
 	public String getAliasVarID(){

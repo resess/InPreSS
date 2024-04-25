@@ -26,9 +26,11 @@ public class UserFeedback {
 		return option;
 	}
 
+
 	public void setOption(ChosenVariableOption option) {
 		this.option = option;
 	}
+
 
 	public String getFeedbackType() {
 		return feedbackType;

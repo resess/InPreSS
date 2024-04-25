@@ -38,6 +38,7 @@ public class projConfig extends Defects4jProjectConfig{
 	public String projectName;
 	public int bugID;
 	public String configFile;
+	public int assertionLine;
 	
 	public String rootPath = ""+File.separator+"home"+File.separator+"linyun"+File.separator+"doc"+File.separator+"git_space"+File.separator+"defects4j"+File.separator+"framework"+File.separator+"bin"+File.separator+"defects4j";
 	//public String javaHome = Activator.getDefault().getPreferenceStore().getString(MicrobatPreference.JAVA7HOME_PATH);
@@ -46,6 +47,7 @@ public class projConfig extends Defects4jProjectConfig{
 			String bytecodeSourceFolder, String buildFolder, String projectName, int bugID) {
 		super(srcTestFolder,srcSourceFolder,bytecodeTestFolder,bytecodeSourceFolder,buildFolder,projectName,bugID);
 		this.configFile = "E";
+		this.assertionLine = 0;
 	}
 	public static projConfig getConfig(String baseProjPath, String projectName, int bugID, String ereasOrSlicer) throws IOException, InterruptedException {
 		projConfig config = null;
@@ -57,9 +59,11 @@ public class projConfig extends Defects4jProjectConfig{
 			if(bugID==1){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "E";
+				
+//				config.assertionLine = getAssertionLine(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 //				config.configFile = "S";
-				if(config.configFile.contentEquals("S"))
-					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				if(config.configFile.contentEquals("S"))
+//					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 			else if(bugID==2){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
@@ -77,8 +81,8 @@ public class projConfig extends Defects4jProjectConfig{
 			}
 			else if(bugID==4){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-//				config.configFile = "E";
-				config.configFile = "S";
+				config.configFile = "E";
+//				config.configFile = "S";
 //				if(config.configFile.contentEquals("S"))
 //					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -100,6 +104,7 @@ public class projConfig extends Defects4jProjectConfig{
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 //				config.configFile = "E";
 				config.configFile = "S";
+				config.assertionLine = 914;
 //				if(config.configFile.contentEquals("S"))
 //					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -137,6 +142,7 @@ public class projConfig extends Defects4jProjectConfig{
 			}	
 			config = new projConfig("tests", "source", "build-tests", "build", "build", projectName, bugID);
 			config.configFile = ereasOrSlicer;
+			config.assertionLine = getAssertionLine(baseProjPath, "build-tests", "build", projectName, bugID,"lib");
 			if(config.configFile.contentEquals("S"))
 				getSlice(baseProjPath, "build-tests", "build", projectName, bugID,"lib");
 		}
@@ -169,6 +175,7 @@ public class projConfig extends Defects4jProjectConfig{
 				    e.printStackTrace();
 				}
 			}
+			config.assertionLine = getAssertionLine(baseProjPath, "build"+File.separator+"test","build"+File.separator+"classes", projectName, bugID,"lib");
 			if(config.configFile.contentEquals("S"))
 				getSlice(baseProjPath, "build"+File.separator+"test","build"+File.separator+"classes", projectName, bugID,"lib");
 		}
@@ -184,9 +191,10 @@ public class projConfig extends Defects4jProjectConfig{
 						
 					saveBugAndTerminate(baseProjPath,projectName, bugID);
 					System.exit(0);
-				}	
+				}					
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"tests", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"tests","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"tests","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			   
@@ -203,6 +211,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);				
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -218,6 +227,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);				
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -233,6 +243,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test", "src"+File.separator+"java", "target"+File.separator+"tests", "target"+File.separator+"classes", "target", projectName, bugID);				
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"tests","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"tests","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -257,6 +268,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);	
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -272,6 +284,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -426,6 +439,7 @@ public class projConfig extends Defects4jProjectConfig{
 				
 				config = new projConfig("test", "src", "build"+File.separator+"classes"+File.separator+"test", "build"+File.separator+"classes"+File.separator+"main", "build", projectName, bugID);	
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath, "build"+File.separator+"classes"+File.separator+"test","build"+File.separator+"classes"+File.separator+"main", projectName, bugID,"lib");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath, "build"+File.separator+"classes"+File.separator+"test","build"+File.separator+"classes"+File.separator+"main", projectName, bugID,"lib");
 			}
@@ -441,6 +455,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("test", "src", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"lib");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"lib");
 			}
@@ -465,6 +480,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);				
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -480,12 +496,84 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "build"+File.separator+"tests", "build"+File.separator+"classes", "build", projectName, bugID);
 				config.configFile = ereasOrSlicer;
+				config.assertionLine = getAssertionLine(baseProjPath,  "build"+File.separator+"tests","build"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "build"+File.separator+"tests","build"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
 		}
 		
 		return config;
+	}
+private static int getAssertionLine(String baseProj, String testFolder, String classFolder, String projectName, int bugID, String depPath) throws IOException, InterruptedException {
+    String proPath = baseProj + projectName + "/" + bugID;
+	String buggyPath = proPath + "/bug/";
+	String failingFile = buggyPath  + "failing_tests";
+	File file = new File(failingFile);
+	BufferedReader reader = new BufferedReader(new FileReader(file));
+	String testClass = "";
+	String testMethod = "";
+	String sliceLine = "";	
+	String sliceClass = "";
+	String line = null;
+	int testCounter = 0;
+	boolean junitFound = false;
+	while ((line = reader.readLine()) != null) {
+		if (line.startsWith("---")) {
+			if(testCounter==0) {
+			 testCounter++;
+			 testClass = line.substring(line.indexOf(" ") + 1, line.indexOf("::"));
+			 testMethod = line.substring(line.indexOf("::") + 2, line.length());
+			}
+			else {
+				break;
+			}
+			 
+		}
+		else {
+//			if (line.contains(testClass) && line.contains(testMethod)) {
+//				found = true;
+//				String temp = (line.split(":")[1]);
+////				System.out.println(temp);
+////				if (temp.contains(")"))
+////					System.out.println(temp.indexOf(")"));
+//				sliceLine = temp.substring(0, temp.indexOf(")"));
+////				System.out.println(sliceLine);
+//				break;
+//			}	
+			if (line.contains("at ")){
+				if (line.contains("at junit."))
+					junitFound = true;	
+				else {
+					if (line.contains("com.squareup")||line.contains("com.actiontech")||
+							line.contains("com.fasterxml.jackson")||line.contains("org.openapitools")||
+							line.contains("com.intuit.wasabi")||line.contains("com.fizzed")||
+							line.contains("dagger.")||line.contains("com.thoughtworks")||
+							line.contains("at org.jfree") || line.contains("at com.google.javascript") || line.contains("at org.apache.commons")|| 
+							line.contains("at org.mockito") || line.contains("at com.google.debugging") || line.contains("at org.joda.time")|| line.contains("at com.hanan")) {
+						if(line.contains(":")) {								
+							String temp = (line.split(":")[1]);
+//							System.out.println(temp);
+//							if (temp.contains(")"))
+//								System.out.println(temp.indexOf(")"));
+//							System.out.println(line.substring(0, line.indexOf("(")));
+							String temp2 = line.substring(0, line.indexOf("(")).split("at ")[1];
+							sliceClass = temp2.substring(0, temp2.lastIndexOf("."));
+							if (sliceClass.contains("$")) {
+								String sclass = sliceClass.substring(0,sliceClass.lastIndexOf("$"));
+								sliceClass=sclass;
+							}
+							sliceLine = temp.substring(0, temp.indexOf(")"));
+							System.out.println(sliceClass+":"+sliceLine);
+							break;
+						}
+					}
+				}						
+			}
+		}					
+	}
+	reader.close();
+	return Integer.valueOf(sliceLine);
+	
 	}
 private static void saveBugAndTerminate(String baseProjPath, String projectName2, int bugID2) {
 	String results = baseProjPath+"/results/"+projectName2+"NoBuild.xlsx";

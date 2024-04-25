@@ -16,6 +16,7 @@ import microbat.views.ImageUI;
 
 public class Settings {
 	public static String projectName;
+	public static String bugID;
 	public static String launchClass;
 	public static String testMethod;
 	
@@ -55,6 +56,7 @@ public class Settings {
 		if(Activator.getDefault() != null){
 			try{
 				projectName = Activator.getDefault().getPreferenceStore().getString(MicrobatPreference.TARGET_PORJECT);
+				bugID = Activator.getDefault().getPreferenceStore().getString(MicrobatPreference.LINE_NUMBER);
 				launchClass = Activator.getDefault().getPreferenceStore().getString(MicrobatPreference.LANUCH_CLASS);
 				testMethod = Activator.getDefault().getPreferenceStore().getString(MicrobatPreference.TEST_METHOD);
 				String isRecord = Activator.getDefault().getPreferenceStore().getString(MicrobatPreference.RECORD_SNAPSHORT);

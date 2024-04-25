@@ -214,7 +214,7 @@ public class dualSlicingWithConfigS {
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public void dualSlicing(String basePath, String projectName, String bugID, TestCase tc, boolean slicer4J, String proPath, TraceNode observedFaultNode, Trace newTrace,
+	public void dualSlicing(String basePath, String projectName, String bugID, TestCase tc, int assertionLine, boolean slicer4J, String proPath, TraceNode observedFaultNode, Trace newTrace,
 			Trace oldTrace, PairList PairList, DiffMatcher matcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> rootList,boolean debug) throws IOException {
 	
 		List<TraceNode> new_workList = new ArrayList<>();
@@ -272,6 +272,19 @@ public class dualSlicingWithConfigS {
 		
 		StepChangeTypeChecker typeChecker = new StepChangeTypeChecker(newTrace, oldTrace);
 		
+		
+		List<TraceNode> old_retained = new ArrayList<>();		
+		List<TraceNode> new_retained = new ArrayList<>();
+		
+		new_retained.add(observedFaultNode);
+		StepChangeType changeType = typeChecker.getType(observedFaultNode, true, PairList, matcher);
+		TraceNode observedFaultNodeMapping = changeType.getMatchingStep();
+		if(observedFaultNodeMapping!=null)
+			old_retained.add(observedFaultNodeMapping);
+		else
+			old_retained.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+		
+		
 		Long dual_start_time = System.currentTimeMillis();
 		while (!new_workList.isEmpty() || !old_workList.isEmpty()) {
 			while (!new_workList.isEmpty()) {
@@ -281,7 +294,7 @@ public class dualSlicingWithConfigS {
 						old_slicer, new_CashDeps, old_CashDeps, newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
 						oldSlicer4JBytecodeMapping, slicer4J, step, newTrace, oldTrace, new_visited, new_workList,
 						old_visited, old_workList, true, typeChecker, PairList, matcher, new_data_map, new_ctl_map,
-						proPath, bugID);
+						proPath, bugID,new_retained,old_retained);
 			}
 			////////////////////////////////////////////////////////////////////////////////////////
 			while (!old_workList.isEmpty()) {
@@ -291,7 +304,7 @@ public class dualSlicingWithConfigS {
 						old_slicer, old_CashDeps, new_CashDeps, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping,
 						newSlicer4JBytecodeMapping, slicer4J, step, oldTrace, newTrace, old_visited, old_workList,
 						new_visited, new_workList, false, typeChecker, PairList, matcher, old_data_map, old_ctl_map,
-						proPath, bugID);
+						proPath, bugID,old_retained,new_retained);
 			}
 		}
 		/// ################################################################
@@ -325,8 +338,7 @@ public class dualSlicingWithConfigS {
 		System.out.println("##############InPress##############");
 		List<TraceNode> old_kept = new ArrayList<>();
 		List<TraceNode> new_kept = new ArrayList<>();		
-		List<TraceNode> old_retained = new ArrayList<>();		
-		List<TraceNode> new_retained = new ArrayList<>();	
+
 		List<String> old_kept_sourceCodeLevel = new ArrayList<>();		
 		List<String> new_kept_sourceCodeLevel = new ArrayList<>();	
 		
@@ -1023,7 +1035,7 @@ public class dualSlicingWithConfigS {
 			Trace otherTrace, List<TraceNode> visited, List<TraceNode> workList, List<TraceNode> other_visited,
 			List<TraceNode> other_workList, boolean isNew, StepChangeTypeChecker typeChecker, PairList pairList,
 			DiffMatcher matcher, HashMap<TraceNode, List<Pair<TraceNode, String>>> data_map,
-			HashMap<TraceNode, List<TraceNode>> ctl_map, String proPath, String bugID) {
+			HashMap<TraceNode, List<TraceNode>> ctl_map, String proPath, String bugID,List<TraceNode> retained, List<TraceNode> OtherRetained) {
 
 		StepChangeType changeType = typeChecker.getType(step, isNew, pairList, matcher);
 		String onNew = isNew ? "new" : "old";
@@ -1033,12 +1045,17 @@ public class dualSlicingWithConfigS {
 //			System.out.println("debug: node is src diff");
 			TraceNode matchedStep = changeType.getMatchingStep();	
 			List<Integer> matchPositions = getSlicer4JMappedNode(matchedStep, OtherSlicer4JMapping, otherSlicer4JBytecodeMapping);
+//			if(!retained.contains(step))
+//				retained.add(step);
 			if (matchPositions != null) {
 				if(!other_visited.contains(matchedStep)) { 
 					other_visited.add(matchedStep);
-					other_workList.add(matchedStep);					
+					other_workList.add(matchedStep);
+//					if(!OtherRetained.contains(matchedStep))
+//						OtherRetained.add(matchedStep);
 				}
 			}
+			
 		}
 		////////////////////////////////////////////////////////////////////
 		////////////////// add corresponding node if it is data//////////////////
@@ -1208,7 +1225,8 @@ public class dualSlicingWithConfigS {
 			    					   reasons.put(d.first(), "identical dep for node " +StepResult + " but corresponds to no matching dep of node " + result); 
 			    				   }
 //			    				   System.out.println("added added");
-			    				   visited.add(d.first()); //just add to visited not the worklist 
+			    				   
+//			    				   visited.add(d.first()); //April 24: just add to visited not the worklist 
 			                   } 
 			    		   }
 			          }
@@ -1233,27 +1251,27 @@ public class dualSlicingWithConfigS {
 			      } 
 			   }
 			}
-			  if(d.first().isException())
-			  { 
-				  TraceNode nextStep = d.first().getStepInPrevious(); 
-				  //System.out.println("debug: prev step " + nextStep); 
-				  List<TraceNode> ctlDeps = ctl_map.get(step); 
-				  if(ctlDeps==null) {
-					  ctlDeps = new ArrayList<>(); 
-				   } 
-				  ctlDeps.add(nextStep); 
-				  ctl_map.put(step, ctlDeps); 
-				  List<Integer> matchPositions = getSlicer4JMappedNode(nextStep,Slicer4JMapping,Slicer4JBytecodeMapping);
-				  if(matchPositions!=null) { 
-					  if(!visited.contains(nextStep)) {
-						  workList.add(nextStep); 
-						  visited.add(nextStep); 
-						  List<Integer> StepPositions = getSlicer4JMappedNode(step,Slicer4JMapping,Slicer4JBytecodeMapping); 
-						  String StepResult = String.valueOf(StepPositions.get(0));//the first byte code trace order in slicer4J 
-						  reasons.put(nextStep, "exception node controling " + StepResult); 
-						} 
-				  } 
-			  } 
+//			  if(d.first().isException()) //April 24:
+//			  { 
+//				  TraceNode nextStep = d.first().getStepInPrevious(); 
+//				  //System.out.println("debug: prev step " + nextStep); 
+//				  List<TraceNode> ctlDeps = ctl_map.get(step); 
+//				  if(ctlDeps==null) {
+//					  ctlDeps = new ArrayList<>(); 
+//				   } 
+//				  ctlDeps.add(nextStep); 
+//				  ctl_map.put(step, ctlDeps); 
+//				  List<Integer> matchPositions = getSlicer4JMappedNode(nextStep,Slicer4JMapping,Slicer4JBytecodeMapping);
+//				  if(matchPositions!=null) { 
+//					  if(!visited.contains(nextStep)) {
+//						  workList.add(nextStep); 
+//						  visited.add(nextStep); 
+//						  List<Integer> StepPositions = getSlicer4JMappedNode(step,Slicer4JMapping,Slicer4JBytecodeMapping); 
+//						  String StepResult = String.valueOf(StepPositions.get(0));//the first byte code trace order in slicer4J 
+//						  reasons.put(nextStep, "exception node controling " + StepResult); 
+//						} 
+//				  } 
+//			  } 
 			 
 		}
 	}
@@ -1498,7 +1516,8 @@ public class dualSlicingWithConfigS {
 			TraceNode step = old_visited.get(i);
 			//System.out.println("step on old is: " + step);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { // separate the blocks
+//			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { // separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || old_retained.contains(step)) { // separate the blocks		
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {// coming from a data block
@@ -1547,7 +1566,7 @@ public class dualSlicingWithConfigS {
 		for (int i = new_visited.size() - 1; i >= 0; i--) {
 			TraceNode step = new_visited.get(i);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || (isATestStatement(tc, step) && isLastStatement(tc, step,new_visited))) { // separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || new_retained.contains(step)) { // separate the blocks
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {// coming from a data block
@@ -1640,7 +1659,7 @@ public class dualSlicingWithConfigS {
 		for (int i = old_visited.size() - 1; i >= 0; i--) {
 			TraceNode step = old_visited.get(i);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { // separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL) || old_retained.contains(step)) { // separate the blocks
 				isDataBlock = false;
 				isCTLBlock = false;
 				if (current_data_flag) {// coming from a data block
@@ -1754,7 +1773,7 @@ public class dualSlicingWithConfigS {
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
 				String Type;
 //				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
-				if (changeType.getType() == StepChangeType.DAT && !isLastStatement(tc, step,old_visited)) {
+				if (changeType.getType() == StepChangeType.DAT && !old_retained.contains(step)) {
 					old_data_node_function.put(step, index);
 					TraceNode matchedStep = changeType.getMatchingStep();
 					new_data_node_function.put(matchedStep, index);
@@ -1765,16 +1784,23 @@ public class dualSlicingWithConfigS {
 					}
 				}
 				//else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
-				else if (changeType.getType() == StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {
+				else if (changeType.getType() == StepChangeType.CTL && !old_retained.contains(step)) {
 					old_ctl_node_function.put(step, index);
 					index = index + 1;
-				} else {
+				} else if (changeType.getType() == StepChangeType.SRCCTL || changeType.getType() == StepChangeType.SRCDAT || old_retained.contains(step)) {
 					if (!old_retained.contains(step))
 						old_retained.add(step);
 					if (!old_kept.contains(step)) {
 						old_kept.add(step);
 						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping)))
 							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher, oldSlicer4J, oldSlicer4JBytecodeMapping));
+					}
+					TraceNode matchedStep = changeType.getMatchingStep();
+					if(matchedStep!=null) {
+						if (!new_retained.contains(matchedStep))
+							new_retained.add(matchedStep);
+						if (!new_kept.contains(matchedStep)) 
+							new_kept.add(matchedStep);
 					}
 				}
 				List<Pair<TraceNode, String>> data_deps = old_data_map.get(step);
@@ -1828,7 +1854,7 @@ public class dualSlicingWithConfigS {
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
 				String Type;
 //				if (changeType.getType() == StepChangeType.DAT && !isATestStatement(tc, step)) {
-				if (changeType.getType() == StepChangeType.DAT && !isLastStatement(tc, step, new_visited)) {
+				if (changeType.getType() == StepChangeType.DAT && !new_retained.contains(step)) {
 					if (!new_data_node_function.keySet().contains(step)) {
 						new_data_node_function.put(step, index);
 						TraceNode matchedStep = changeType.getMatchingStep();
@@ -1842,10 +1868,10 @@ public class dualSlicingWithConfigS {
 					}
 				}
 //				 else if (changeType.getType() == StepChangeType.CTL && !isATestStatement(tc, step)) {
-				else if (changeType.getType() == StepChangeType.CTL && !isLastStatement(tc, step, new_visited)) {
+				else if (changeType.getType() == StepChangeType.CTL && !new_retained.contains(step)) {
 					new_ctl_node_function.put(step, index);
 					index = index + 1;
-				} else {
+				} else if (changeType.getType() == StepChangeType.SRCCTL || changeType.getType() == StepChangeType.SRCDAT || new_retained.contains(step)) {
 					if (!new_retained.contains(step))
 						new_retained.add(step);
 					if (!new_kept.contains(step)) {
@@ -1853,6 +1879,14 @@ public class dualSlicingWithConfigS {
 						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher, newSlicer4J, newSlicer4JBytecodeMapping)))
 							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher, newSlicer4J, newSlicer4JBytecodeMapping));
 					}
+					TraceNode matchedStep = changeType.getMatchingStep();
+					if(matchedStep!=null) {
+						if (!old_retained.contains(matchedStep))
+							old_retained.add(matchedStep);
+						if (!old_kept.contains(matchedStep)) 
+							old_kept.add(matchedStep);
+					}
+					
 				}
 				List<Pair<TraceNode, String>> data_deps = new_data_map.get(step);
 				if (data_deps != null)
@@ -3299,14 +3333,17 @@ public class dualSlicingWithConfigS {
 	return no;
 }
 
-	public void corex(String basePath, String projectName, String bugID, TestCase tc, boolean slicer4J, String proPath, TraceNode observedFaultNode, Trace newTrace,
-			Trace oldTrace, PairList pairList, DiffMatcher diffMatcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> rootList,boolean debug) throws IOException {
+	public Pair<List<TraceNode>,List<TraceNode>> corex(String basePath, String projectName, String bugID, TestCase tc, int assertionLine, boolean slicer4J, String proPath, TraceNode observedFaultNode, Trace newTrace,
+			Trace oldTrace, PairList pairList, DiffMatcher diffMatcher, int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> rootList,boolean debug, String tool2Run) throws IOException {
 		
 		List<TraceNode> old_visited = new ArrayList<>();
 		List<TraceNode> new_visited = new ArrayList<>();
 		List<TraceNode> inpress_old_kept = new ArrayList<>();
 		List<TraceNode> inpress_new_kept = new ArrayList<>();
-		InPreSS(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, pairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootList,debug,new_visited,old_visited,inpress_new_kept,inpress_old_kept);
+		List<TraceNode> old_retained_dual = new ArrayList<>();		
+		List<TraceNode> new_retained_dual = new ArrayList<>();
+		if(tool2Run.equals("dual") || tool2Run.equals("all"))
+			InPreSS(basePath,projectName, bugID,tc, assertionLine, false, proPath, observedFaultNode, newTrace, oldTrace, pairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootList,debug,new_visited,old_visited,inpress_new_kept,inpress_old_kept,new_retained_dual,old_retained_dual);
 		
 		List<TraceNode> new_workList = new ArrayList<>();
 		List<TraceNode> dual_idt_new_visited = new ArrayList<>();
@@ -3322,8 +3359,7 @@ public class dualSlicingWithConfigS {
 		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> old_CashDeps = new HashMap<>();
 		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> new_CashDeps = new HashMap<>();
 
-		dual_idt_new_visited.add(observedFaultNode);
-		new_workList.add(observedFaultNode);
+
 //		newTheReasonToBeInResult.put(observedFaultNode, "the failed assertion");
 				
 		System.out.println("#############################");
@@ -3361,43 +3397,75 @@ public class dualSlicingWithConfigS {
 		
 		StepChangeTypeChecker typeChecker = new StepChangeTypeChecker(newTrace, oldTrace);
 		
+		List<TraceNode> old_retained = new ArrayList<>();		
+		List<TraceNode> new_retained = new ArrayList<>();
+		List<TraceNode> corex_old_kept = new ArrayList<>();//final kept after adding context of what we need
+		List<TraceNode> corex_new_kept = new ArrayList<>();//final kept after adding context of what we need
+		
+		dual_idt_new_visited.add(observedFaultNode);
+		new_workList.add(observedFaultNode);
+		corex_new_kept.add(observedFaultNode);
+		new_retained.add(observedFaultNode);
+		StepChangeType changeType = typeChecker.getType(observedFaultNode, true, pairList, diffMatcher);
+		TraceNode observedFaultNodeMapping = changeType.getMatchingStep();
+		if(observedFaultNodeMapping!=null) {
+			old_retained.add(observedFaultNodeMapping);
+			corex_old_kept.add(observedFaultNodeMapping);
+			dual_idt_old_visited.add(observedFaultNodeMapping);
+			old_workList.add(observedFaultNodeMapping);
+		}
+		else {
+//			old_retained.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+//			corex_old_kept.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+//			dual_idt_old_visited.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+//			old_workList.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+			old_retained.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+			corex_old_kept.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+			dual_idt_old_visited.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+			old_workList.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+		}
+		
 		Long dual_start_time = System.currentTimeMillis();
-		while (!new_workList.isEmpty() || !old_workList.isEmpty()) {
-			while (!new_workList.isEmpty()) {
-//				System.out.println("#############################");
-				TraceNode step = new_workList.remove(0);
-				updateWorklistKeepingIdentical(new_dcfg, new_slicer, old_dcfg,
-						old_slicer, new_CashDeps, old_CashDeps, newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
-						oldSlicer4JBytecodeMapping, slicer4J, step, newTrace, oldTrace, dual_idt_new_visited, new_workList,
-						dual_idt_old_visited, old_workList, true, typeChecker, pairList, diffMatcher, new_data_map, new_ctl_map,
-						proPath, bugID);
-			}
-			////////////////////////////////////////////////////////////////////////////////////////
-			while (!old_workList.isEmpty()) {
-//				System.out.println("#############################");
-				TraceNode step = old_workList.remove(0);
-				updateWorklistKeepingIdentical(new_dcfg, new_slicer, old_dcfg,
-						old_slicer, old_CashDeps, new_CashDeps, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping,
-						newSlicer4JBytecodeMapping, slicer4J, step, oldTrace, newTrace, dual_idt_old_visited, old_workList,
-						dual_idt_new_visited, new_workList, false, typeChecker, pairList, diffMatcher, old_data_map, old_ctl_map,
-						proPath, bugID);
+		if(tool2Run.equals("corex") || tool2Run.equals("all")) {
+			while (!new_workList.isEmpty() || !old_workList.isEmpty()) {
+				while (!new_workList.isEmpty()) {
+	//				System.out.println("#############################");
+					TraceNode step = new_workList.remove(0);
+					updateWorklistKeepingIdentical(new_dcfg, new_slicer, old_dcfg,
+							old_slicer, new_CashDeps, old_CashDeps, newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
+							oldSlicer4JBytecodeMapping, slicer4J, step, newTrace, oldTrace, dual_idt_new_visited, new_workList,
+							dual_idt_old_visited, old_workList, true, typeChecker, pairList, diffMatcher, new_data_map, new_ctl_map,
+							proPath, bugID,new_retained,old_retained);
+				}
+				////////////////////////////////////////////////////////////////////////////////////////
+				while (!old_workList.isEmpty()) {
+	//				System.out.println("#############################");
+					TraceNode step = old_workList.remove(0);
+					updateWorklistKeepingIdentical(new_dcfg, new_slicer, old_dcfg,
+							old_slicer, old_CashDeps, new_CashDeps, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping,
+							newSlicer4JBytecodeMapping, slicer4J, step, oldTrace, newTrace, dual_idt_old_visited, old_workList,
+							dual_idt_new_visited, new_workList, false, typeChecker, pairList, diffMatcher, old_data_map, old_ctl_map,
+							proPath, bugID,old_retained,new_retained);
+				}
 			}
 		}
 		/// ################################################################
 		/// ################################################################
 		Long dual_finish_time = System.currentTimeMillis();				
 		int dual_Time = (int) (dual_finish_time - dual_start_time);
-				
-		for(int i=dual_idt_old_visited.size()-1;i>=0; i--){
-			TraceNode step = dual_idt_old_visited.get(i);
-			if(step==null)
-				dual_idt_old_visited.remove(i);
+		
+		if(tool2Run.equals("corex") || tool2Run.equals("all")) {
+			for(int i=dual_idt_old_visited.size()-1;i>=0; i--){
+				TraceNode step = dual_idt_old_visited.get(i);
+				if(step==null)
+					dual_idt_old_visited.remove(i);
+			}
+			for(int i=dual_idt_new_visited.size()-1;i>=0; i--){
+				TraceNode step = dual_idt_new_visited.get(i);
+				if(step==null)
+					dual_idt_new_visited.remove(i);
+			}
 		}
-		for(int i=dual_idt_new_visited.size()-1;i>=0; i--){
-			TraceNode step = dual_idt_new_visited.get(i);
-			if(step==null)
-				dual_idt_new_visited.remove(i);
-		}	
 		System.out.println("##########Finish Dual Slciing with keepint identical ###################");
 //		printDualSliceResults(old_visited, false, proPath, diffMatcher);
 //		printDualSliceResults(new_visited,true, proPath,diffMatcher);
@@ -3408,7 +3476,7 @@ public class dualSlicingWithConfigS {
 		HashMap<Integer, Integer> oldCommonChunkInfo = new HashMap<>();
 		HashMap<Integer, Integer> newCommonChunkInfo = new HashMap<>();
 		getChangeChunks(typeChecker, diffMatcher, dual_idt_old_visited,dual_idt_new_visited,oldChangeChunkInfo,newChangeChunkInfo);
-		getCommonBlocksChunks(typeChecker, diffMatcher, tc,dual_idt_old_visited,dual_idt_new_visited,oldCommonChunkInfo,newCommonChunkInfo);
+//		getCommonBlocksChunks(typeChecker, diffMatcher, tc,dual_idt_old_visited,dual_idt_new_visited,oldCommonChunkInfo,newCommonChunkInfo);
 //		System.out.println("##############Printing Abstraction to Graph##############");
 //		System.out.println(old_data_map);
 		HashMap<TraceNode, List<Pair<TraceNode, String>>> both_new_data_map = new_data_map;
@@ -3422,8 +3490,7 @@ public class dualSlicingWithConfigS {
 		List<TraceNode> inpress_keep_IDT_new_kept = new ArrayList<>();
 		List<TraceNode> corex_removing_DAT_IDT_old_kept = new ArrayList<>();
 		List<TraceNode> corex_removing_DAT_IDT_new_kept = new ArrayList<>();
-		List<TraceNode> corex_old_kept = new ArrayList<>();//final kept after adding context of what we need
-		List<TraceNode> corex_new_kept = new ArrayList<>();//final kept after adding context of what we need		
+		
 		List<String> old_kept_sourceCodeLevel = new ArrayList<>();		
 		List<String> new_kept_sourceCodeLevel = new ArrayList<>();
 		HashMap<TraceNode, List<Pair<TraceNode, String>>> new_corex_edges = new HashMap<>(); //<line 17, [(line 6, null), (line 7, f=Func_1(c,x)), (line 9, a)]>
@@ -3438,26 +3505,34 @@ public class dualSlicingWithConfigS {
 		HashMap<Integer, List<TraceNode>> newIdtBlockNodes = new HashMap<>();
 		long corex_start_time = System.currentTimeMillis();	
 		
-		List<TraceNode> old_retained = new ArrayList<>();		
-		List<TraceNode> new_retained = new ArrayList<>();
-				
-		corexAlgorithm(oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping,tc, proPath, dual_idt_old_visited,dual_idt_new_visited,typeChecker,pairList, 
+		if(tool2Run.equals("corex")|| tool2Run.equals("all")) {
+			corexAlgorithm(oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping,tc, proPath, dual_idt_old_visited,dual_idt_new_visited,typeChecker,pairList, 
 				diffMatcher,both_old_data_map,both_old_ctl_map,both_new_data_map,both_new_ctl_map,corex_old_kept, corex_new_kept, inpress_keep_IDT_old_kept, inpress_keep_IDT_new_kept, 
 				corex_removing_DAT_IDT_old_kept, corex_removing_DAT_IDT_new_kept, oldDataBlockNodes, newDataBlockNodes, oldCtlBlockNodes, newCtlBlockNodes, oldIdtBlockNodes, newIdtBlockNodes, old_retained, new_retained,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel, new_corex_edges, old_corex_edges);
-		
-//		System.out.println("dual retained old" + old_retained_dual);
-//		System.out.println("dual retained new" + new_retained_dual);
-//		System.out.println("Corex retained old" + old_retained);
-//		System.out.println("Corex retained new" + new_retained);
+		}
 		
 		long corex_finish_time = System.currentTimeMillis();			
 		int corex_Time = (int) (corex_finish_time - corex_start_time);
 		System.out.println("##############Saving Results##############");	
-		PrintResults(tc,basePath, projectName, bugID, typeChecker,pairList, diffMatcher, newTrace, oldTrace,  new_visited, old_visited, inpress_new_kept,inpress_old_kept, dual_idt_new_visited, dual_idt_old_visited, corex_old_kept, corex_new_kept, inpress_keep_IDT_old_kept, inpress_keep_IDT_new_kept, 
-				corex_removing_DAT_IDT_old_kept, corex_removing_DAT_IDT_new_kept, new_retained, 
-								old_retained, newDataBlockNodes, oldDataBlockNodes, newIdtBlockNodes, oldIdtBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+		if(tool2Run.equals("all") || tool2Run.equals("dual")) {
+			PrintResults(tc,basePath, projectName, bugID, typeChecker,pairList, diffMatcher, newTrace, oldTrace,  new_visited, old_visited, inpress_new_kept,inpress_old_kept, dual_idt_new_visited, dual_idt_old_visited, corex_old_kept, corex_new_kept, inpress_keep_IDT_old_kept, inpress_keep_IDT_new_kept, 
+				corex_removing_DAT_IDT_old_kept, corex_removing_DAT_IDT_new_kept, new_retained_dual, 
+								old_retained_dual, newDataBlockNodes, oldDataBlockNodes, newIdtBlockNodes, oldIdtBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
 								traceTime, dual_Time, corex_Time,oldChangeChunkInfo,newChangeChunkInfo,
-								oldCommonChunkInfo, newCommonChunkInfo, old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
+								oldCommonChunkInfo, newCommonChunkInfo, old_kept_sourceCodeLevel,new_kept_sourceCodeLevel,newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
+								oldSlicer4JBytecodeMapping);	
+		}else {//only corex
+			PrintResults(tc,basePath, projectName, bugID, typeChecker,pairList, diffMatcher, newTrace, oldTrace,  new_visited, old_visited, inpress_new_kept,inpress_old_kept, dual_idt_new_visited, dual_idt_old_visited, corex_old_kept, corex_new_kept, inpress_keep_IDT_old_kept, inpress_keep_IDT_new_kept, 
+					corex_removing_DAT_IDT_old_kept, corex_removing_DAT_IDT_new_kept, new_retained, 
+									old_retained, newDataBlockNodes, oldDataBlockNodes, newIdtBlockNodes, oldIdtBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+									traceTime, dual_Time, corex_Time,oldChangeChunkInfo,newChangeChunkInfo,
+									oldCommonChunkInfo, newCommonChunkInfo, old_kept_sourceCodeLevel,new_kept_sourceCodeLevel,newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
+									oldSlicer4JBytecodeMapping);	
+		}
+		
+		
+		Pair pair = new Pair(old_visited, new_visited);
+		return pair;
 		
 	}
 	private void PrintResults(TestCase tc, String basePath, String projectName, String bugID, StepChangeTypeChecker typeChecker, PairList pairList, DiffMatcher matcher, 
@@ -3473,7 +3548,9 @@ public class dualSlicingWithConfigS {
 			HashMap<Integer, Integer> oldChangeChunkInfo, HashMap<Integer, Integer> newChangeChunkInfo,
 			HashMap<Integer, Integer> oldCommonChunkInfo, HashMap<Integer, Integer> newCommonChunkInfo,
 			List<String> old_kept_sourceCodeLevel,
-			List<String> new_kept_sourceCodeLevel) {
+			List<String> new_kept_sourceCodeLevel,BiMap<TraceNode, String> NewSlicer4JMapping, BiMap<TraceNode, String> OldSlicer4JMapping,
+			HashMap<String, List<String>> NewSlicer4JBytecodeMapping,
+			HashMap<String, List<String>> OldSlicer4JBytecodeMapping) {
 		
 
 		Path path = Paths.get(basePath+"/results");
@@ -3494,8 +3571,10 @@ public class dualSlicingWithConfigS {
 		
 		double DualoldReduction_orig = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(old_visited.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
 		double DualnewReduction_orig = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(new_visited.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
-	    double InPreSSoldReduction_orig = (Double.valueOf(old_visited.size())-Double.valueOf(inpress_old_kept.size()))/(Double.valueOf(old_visited.size()))*100.0;
-	    double InPreSSnewReduction_orig = (Double.valueOf(new_visited.size())-Double.valueOf(inpress_new_kept.size()))/(Double.valueOf(new_visited.size()))*100.0;
+	    double InPreSSoldReduction_orig = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(inpress_old_kept.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
+	    double InPreSSnewReduction_orig = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(inpress_new_kept.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
+	    double CoReXoldReduction_orig = (Double.valueOf(oldTrace.getExecutionList().size())-Double.valueOf(old_kept.size()))/(Double.valueOf(oldTrace.getExecutionList().size()))*100.0;
+	    double CoReXnewReduction_orig = (Double.valueOf(newTrace.getExecutionList().size())-Double.valueOf(new_kept.size()))/(Double.valueOf(newTrace.getExecutionList().size()))*100.0;
 		
 	    
 	    double CoReXDualoldReduction_orig = (Double.valueOf(old_visited.size())-Double.valueOf(old_kept.size()))/(Double.valueOf(old_visited.size()))*100.0;
@@ -3511,7 +3590,6 @@ public class dualSlicingWithConfigS {
 		if (!tempFile.exists()) {
 	        FirstTime=true;
 	        XSSFWorkbook workbook = new XSSFWorkbook();
-	        XSSFSheet sheet = workbook.createSheet("RQ1");
 	        try {
 	        	FileOutputStream outputStream = new FileOutputStream(results);
 	            workbook.write(outputStream);
@@ -3529,7 +3607,7 @@ public class dualSlicingWithConfigS {
 	        		"New Dual size (#DSlice)", "%New Trace vs Dual Reduct.", "#New Chg", "New InPreSS size(#InPreSS)", "%New Dual vs InPreSS Reduct.", "New CoReX size (#CoReX)", "%New Dual vs CoReX Reduct.", "%New InPreSS vs CoReX Reduct.",
 	        		"DSlice Time (Min)", "CoReX Time (Min)"
 	        		};
-	        WriteToExcel(results, header, "RQ1",false, true);
+	        WriteToExcel(results, header, "RQ3-2-Extra",true, true);
 	    }
 	    String[] detailedDataRQ1 = {bugID, 
 	    		String.valueOf(oldTrace.getExecutionList().size()), String.valueOf(dual_keep_IDT_old_visited.size()), String.valueOf(DualoldReduction), 
@@ -3546,25 +3624,37 @@ public class dualSlicingWithConfigS {
 	    		String.valueOf(new_kept.size()), String.valueOf(CoReXDualnewReduction_orig), String.valueOf(CoReXInPreSSnewReduction_orig),
 	    		String.valueOf((Double.valueOf(dual_Time)/1000.0)/60.0), String.valueOf((Double.valueOf(corex_Time)/1000.0)/60.0)
 	    		};
-	    WriteToExcel(results,detailedDataRQ1,"RQ1",false, false);
+	    WriteToExcel(results,detailedDataRQ1,"RQ3-2-Extra",true, false);
+					
+
+
+        if (FirstTime) {		    	
+	        String[] header = {"Bug ID", 
+	        		"Old trace size (#T)","Old Dual size (#DSlice)", "%Old Trace vs Dual Reduct.", "#Old Chg", "Old InPreSS size", "%Old Trace vs InPreSS Reduct.", "Old CoReX size (#CoReX)", "%Old Trace vs CoReX Reduct.", 
+	        		"New trace size (#T)","New Dual size (#DSlice)", "%New Trace vs Dual Reduct.", "#New Chg", "New InPreSS size", "%New Trace vs InPreSS Reduct.", "New CoReX size (#CoReX)", "%New Trace vs CoReX Reduct.", 
+	        		"DSlice Time (Min)", "CoReX Time (Min)"
+	        		};
+	        WriteToExcel(results, header, "RQ3-2",true, true);
+	    }
+        String[] detailedDataRQ3_2 = {bugID, 
+	    		String.valueOf(oldTrace.getExecutionList().size()), 
+	    		String.valueOf(old_visited.size()), String.valueOf(DualoldReduction_orig), 
+	    		String.valueOf(oldChangeChunkInfo.keySet().size()), 
+	    		String.valueOf(inpress_old_kept.size()), String.valueOf(InPreSSoldReduction_orig), 
+	    		String.valueOf(old_kept.size()), String.valueOf(CoReXoldReduction_orig), 
+	    		String.valueOf(newTrace.getExecutionList().size()), 
+	    		String.valueOf(new_visited.size()), String.valueOf(DualnewReduction_orig), 
+	    		String.valueOf(newChangeChunkInfo.keySet().size()), 
+	    		String.valueOf(inpress_new_kept.size()), String.valueOf(InPreSSnewReduction_orig), 
+	    		String.valueOf(new_kept.size()), String.valueOf(CoReXnewReduction_orig),
+	    		String.valueOf((Double.valueOf(dual_Time)/1000.0)/60.0), String.valueOf((Double.valueOf(corex_Time)/1000.0)/60.0)
+	    		};
+	    WriteToExcel(results,detailedDataRQ3_2,"RQ3-2",true, false);
 					
 
 	    /////////////////#######////#######////#######////#######////#######////#######
 	    /////////////////#######////#######////#######////#######////#######////#######
 
-	    int h1No_old = 0;
-	    for(TraceNode node: corex_removing_DAT_IDT_old_kept) {
-	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
-	    	if (changeType.getType()==StepChangeType.IDT)//sufficient identical that is kept
-	    		h1No_old++;	    		
-	    }
-	    int h1No_new = 0;
-	    for(TraceNode node: corex_removing_DAT_IDT_new_kept) {
-	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
-	    	if (changeType.getType()==StepChangeType.IDT)
-	    		h1No_new++;	    		
-	    }
-	    
 	    int h2No_old = 0; 
 	    for(TraceNode node: inpress_keep_IDT_old_kept) {
 	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
@@ -3577,28 +3667,33 @@ public class dualSlicingWithConfigS {
 	    	if (changeType.getType()==StepChangeType.DAT && (!corex_removing_DAT_IDT_new_kept.contains(node)))//unnecessary data that is removed
 	    		h2No_new++;	    		
 	    }
-	    int h2No_old_nec = 0;
-	    for(TraceNode node: corex_removing_DAT_IDT_old_kept) {
-	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
-	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL))
-	    		h2No_old_nec++;	    		
-	    }
-	    int h2No_new_nec = 0;
-	    for(TraceNode node: corex_removing_DAT_IDT_new_kept) {
-	    	StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
-	    	if ((changeType.getType()==StepChangeType.DAT || changeType.getType()==StepChangeType.CTL))
-	    		h2No_new_nec++;	    		
-	    }
-	    
+	    int h1No_old = 0;
+	    int h1No_new = 0;
+	    int h2No_old_nec = 0;	    
+	    int h2No_new_nec = 0;	    
 	    int h3No_old = 0;
 	    for(TraceNode node: old_kept) {
 	    	if (!corex_removing_DAT_IDT_old_kept.contains(node))
-	    		h3No_old++;	    		
+	    		h3No_old++;	
+	    	else {
+	    		StepChangeType changeType = typeChecker.getTypeForPrinting(node, false, pairList, matcher);
+		    	if (changeType.getType()==StepChangeType.IDT)//sufficient identical that is kept
+		    		h1No_old++;	
+		    	else 
+		    		h2No_old_nec++;
+	    	}
 	    }
 	    int h3No_new = 0;
 	    for(TraceNode node: new_kept) {
 	    	if (!corex_removing_DAT_IDT_new_kept.contains(node))
-	    		h3No_new++;	    		
+	    		h3No_new++;	
+	    	else {
+	    		StepChangeType changeType = typeChecker.getTypeForPrinting(node, true, pairList, matcher);
+		    	if (changeType.getType()==StepChangeType.IDT)//sufficient identical that is kept
+		    		h1No_new++;	
+		    	else 
+		    		h2No_new_nec++;
+	    	}
 	    }
 	    
 	    if (FirstTime) {		    	
@@ -3606,14 +3701,14 @@ public class dualSlicingWithConfigS {
 	        		"Old CoReX size (#CoReX)", "H1: Old relevant size (#Sufficiency)", "H2: Old unnecessary size (#Unnecessary)", "H2: Old necessary size (#necessary)", "H3: Old Contex size (#Context)", 
 	        		"New CoReX size (#CoReX)", "H1: New relevant size (#Sufficiency)", "H2: New unnecessary size (#Unnecessary)", "H2: Old necessary size (#necessary)", "H3: New Contex size (#Context)"
 	        		};
-	        WriteToExcel(results, header, "RQ2",true,true);
+	        WriteToExcel(results, header, "RQ3-1",true,true);
 	    }
 	    
 	    String[] detailedDataRQ2 = {bugID, 
 	    		String.valueOf(old_kept.size()), String.valueOf(h1No_old), String.valueOf(h2No_old), String.valueOf(h2No_old_nec), String.valueOf(h3No_old),
 	    		String.valueOf(new_kept.size()), String.valueOf(h1No_new), String.valueOf(h2No_new), String.valueOf(h2No_new_nec), String.valueOf(h3No_new),
 	    		};
-	    WriteToExcel(results,detailedDataRQ2,"RQ2",true, false);
+	    WriteToExcel(results,detailedDataRQ2,"RQ3-1",true, false);
 		/////////////////#######////#######////#######////#######////#######////#######
 		/////////////////#######////#######////#######////#######////#######////#######
 	    		       
@@ -4075,7 +4170,7 @@ public class dualSlicingWithConfigS {
 	        		"# New identical block", "New Identical Avg.", "New Identical Max", "%New Identical Reduction", "%New Identical Reduction (vs Dual)", "%New Identical Reduction (vs InPreSS)",
 	        		"# New unmathched block", "New UnMatch Avg.", "New UnMatch Max", "%New UnMatch Reduction", "%New UnMatch Reduction (vs Dual)", "%New UnMatch Reduction (vs InPreSS)"
 	        		};
-	        WriteToExcel(results, header, "RQ3",true,true);
+	        WriteToExcel(results, header, "RQ3-4",true,true);
 	    }
 	    
 	    String[] detailedDataRQ3 = {bugID, 
@@ -4086,41 +4181,41 @@ public class dualSlicingWithConfigS {
 	    		String.valueOf(newIdtBlockNodes.keySet().size()), String.valueOf(newIDTCoReXAvg),String.valueOf(newIDTCoReXMax),String.valueOf(Dual_reducnewIDT),String.valueOf(InPreSS_reducnewIDT),
 	    		String.valueOf(newCtlBlockNodes.keySet().size()), String.valueOf(newCTLCoReXAvg),String.valueOf(newCTLCoReXMax),String.valueOf(Dual_reducnewCTL),String.valueOf(InPreSS_reducnewCTL),
 	    		};
-	       WriteToExcel(results,detailedDataRQ3,"RQ3",true,false);
+	       WriteToExcel(results,detailedDataRQ3,"RQ3-4",true,false);
 	    
 	       /////////////////#######////#######////#######////#######////#######////#######
 	       /////////////////#######////#######////#######////#######////#######////#######
 	       
-	       boolean Einspect5_Dual = CanFindTheBug(5, old_visited, new_visited,old_retained,new_retained);
-	       boolean Einspect5_InPreSS = CanFindTheBug(5, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
-	       boolean Einspect5_CoReX = CanFindTheBug(5, old_kept, new_kept,old_retained,new_retained);
+	       boolean Einspect5_Dual = CanFindTheBug(5, old_visited, new_visited,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect5_InPreSS = CanFindTheBug(5, inpress_old_kept, inpress_new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect5_CoReX = CanFindTheBug(5, old_kept, new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
 	       
-	       boolean Einspect10_Dual = CanFindTheBug(10, old_visited, new_visited,old_retained,new_retained);
-	       boolean Einspect10_InPreSS = CanFindTheBug(10, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
-	       boolean Einspect10_CoReX = CanFindTheBug(10, old_kept, new_kept,old_retained,new_retained);
+	       boolean Einspect10_Dual = CanFindTheBug(10, old_visited, new_visited,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect10_InPreSS = CanFindTheBug(10, inpress_old_kept, inpress_new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect10_CoReX = CanFindTheBug(10, old_kept, new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
 	       
-	       boolean Einspect30_Dual = CanFindTheBug(30, old_visited, new_visited,old_retained,new_retained);
-	       boolean Einspect30_InPreSS = CanFindTheBug(30, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
-	       boolean Einspect30_CoReX = CanFindTheBug(30, old_kept, new_kept,old_retained,new_retained);
+	       boolean Einspect30_Dual = CanFindTheBug(30, old_visited, new_visited,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect30_InPreSS = CanFindTheBug(30, inpress_old_kept, inpress_new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect30_CoReX = CanFindTheBug(30, old_kept, new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
 	       
-	       boolean Einspect50_Dual = CanFindTheBug(50, old_visited, new_visited,old_retained,new_retained);
-	       boolean Einspect50_InPreSS = CanFindTheBug(50, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
-	       boolean Einspect50_CoReX = CanFindTheBug(50, old_kept, new_kept,old_retained,new_retained);
+	       boolean Einspect50_Dual = CanFindTheBug(50, old_visited, new_visited,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect50_InPreSS = CanFindTheBug(50, inpress_old_kept, inpress_new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect50_CoReX = CanFindTheBug(50, old_kept, new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
 	  
-	       boolean Einspect100_Dual = CanFindTheBug(100, old_visited, new_visited,old_retained,new_retained);
-	       boolean Einspect100_InPreSS = CanFindTheBug(100, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
-	       boolean Einspect100_CoReX = CanFindTheBug(100, old_kept, new_kept,old_retained,new_retained);
+	       boolean Einspect100_Dual = CanFindTheBug(100, old_visited, new_visited,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect100_InPreSS = CanFindTheBug(100, inpress_old_kept, inpress_new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect100_CoReX = CanFindTheBug(100, old_kept, new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
 	  
-	       boolean Einspect200_Dual = CanFindTheBug(200, old_visited, new_visited,old_retained,new_retained);
-	       boolean Einspect200_InPreSS = CanFindTheBug(200, inpress_old_kept, inpress_new_kept,old_retained,new_retained);
-	       boolean Einspect200_CoReX = CanFindTheBug(200, old_kept, new_kept,old_retained,new_retained);
+	       boolean Einspect200_Dual = CanFindTheBug(200, old_visited, new_visited,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect200_InPreSS = CanFindTheBug(200, inpress_old_kept, inpress_new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
+	       boolean Einspect200_CoReX = CanFindTheBug(200, old_kept, new_kept,old_retained,new_retained,NewSlicer4JMapping,OldSlicer4JMapping,NewSlicer4JBytecodeMapping,OldSlicer4JBytecodeMapping);
 	       
-	       int traversed_old_Dual = CalculateWastedEffort(old_visited,old_retained);
-	       int traversed_new_Dual = CalculateWastedEffort(new_visited,new_retained);
-	       int traversed_old_InPreSS = CalculateWastedEffort(inpress_old_kept,old_retained);
-	       int traversed_new_InPreSS = CalculateWastedEffort(inpress_new_kept,new_retained);
-	       int traversed_old_CoReX = CalculateWastedEffort(old_kept,old_retained);
-	       int traversed_new_CoReX = CalculateWastedEffort(new_kept,new_retained);
+	       int traversed_old_Dual = CalculateWastedEffort(old_visited,old_retained,OldSlicer4JMapping,OldSlicer4JBytecodeMapping);
+	       int traversed_new_Dual = CalculateWastedEffort(new_visited,new_retained,NewSlicer4JMapping,NewSlicer4JBytecodeMapping);
+	       int traversed_old_InPreSS = CalculateWastedEffort(inpress_old_kept,old_retained,OldSlicer4JMapping,OldSlicer4JBytecodeMapping);
+	       int traversed_new_InPreSS = CalculateWastedEffort(inpress_new_kept,new_retained,NewSlicer4JMapping,NewSlicer4JBytecodeMapping);
+	       int traversed_old_CoReX = CalculateWastedEffort(old_kept,old_retained,OldSlicer4JMapping,OldSlicer4JBytecodeMapping);
+	       int traversed_new_CoReX = CalculateWastedEffort(new_kept,new_retained,NewSlicer4JMapping,NewSlicer4JBytecodeMapping);
 	       
 	       double wasted_effort_old_Dual = (double)traversed_old_Dual/oldTrace.getExecutionList().size();
 	       double wasted_effort_new_Dual = (double)traversed_new_Dual/newTrace.getExecutionList().size();
@@ -4141,7 +4236,7 @@ public class dualSlicingWithConfigS {
 		        		"Exam% Old-Dual", "Exam% New-Dual", "Exam% Old-InPreSS", "Exam% New-InPreSS", "Exam% Old-CoReX","Exam% New-CoReX",
 		        		
 		        		};
-		        WriteToExcel(results, header, "RQ4",true, true);
+		        WriteToExcel(results, header, "RQ3-3",true, true);
 		    }
 		    String[] detailedDataRQ4 = {bugID, 
 		    		String.valueOf(Einspect5_Dual),String.valueOf(Einspect5_InPreSS),String.valueOf(Einspect5_CoReX),
@@ -4153,7 +4248,7 @@ public class dualSlicingWithConfigS {
 		    		String.valueOf(traversed_old_Dual),String.valueOf(traversed_new_Dual),String.valueOf(traversed_old_InPreSS),String.valueOf(traversed_new_InPreSS),String.valueOf(traversed_old_CoReX),String.valueOf(traversed_new_CoReX),
 		    		String.valueOf(wasted_effort_old_Dual),String.valueOf(wasted_effort_new_Dual),String.valueOf(wasted_effort_old_InPreSS),String.valueOf(wasted_effort_new_InPreSS),String.valueOf(wasted_effort_old_CoReX),String.valueOf(wasted_effort_new_CoRex)
 		    };
-		    WriteToExcel(results,detailedDataRQ4,"RQ4",true, false);
+		    WriteToExcel(results,detailedDataRQ4,"RQ3-3",true, false);
 						
 
 		    /////////////////#######////#######////#######////#######////#######////#######
@@ -4195,7 +4290,7 @@ public class dualSlicingWithConfigS {
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
 //			System.out.println("step type: " + changeType.getType());	
 			//if ((changeType.getType()!=StepChangeType.DAT || i==old_visited.size()-1) && changeType.getType()!=StepChangeType.CTL) { //separate the blocks
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { //it is retain		
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (old_retained.contains(step))) { //it is retain		
 				isDataBlock = false;
 				isCTLBlock = false;
 				isIDTBlock = false;
@@ -4281,7 +4376,7 @@ public class dualSlicingWithConfigS {
 			//System.out.println("step on new is: " + step);	
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
 			//if ((changeType.getType()!=StepChangeType.DAT || i==new_visited.size()-1) && changeType.getType()!=StepChangeType.CTL) { //separate the blocks
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (isATestStatement(tc, step) && isLastStatement(tc, step,new_visited))) { //separate the blocks				
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || ((new_retained.contains(step)))) { //separate the blocks				
 				isDataBlock = false;
 				isCTLBlock = false;
 				isIDTBlock = false;
@@ -4456,7 +4551,7 @@ public class dualSlicingWithConfigS {
 		for(int i=old_visited.size()-1;i>=0; i--){
 			TraceNode step = old_visited.get(i);
 			StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
-			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (isATestStatement(tc, step) && isLastStatement(tc, step,old_visited))) { //separate the blocks
+			if ((changeType.getType()!=StepChangeType.DAT && changeType.getType()!=StepChangeType.CTL && changeType.getType()!=StepChangeType.IDT) || (old_retained.contains(step))) { //separate the blocks
 				isDataBlock = false;
 				isCTLBlock = false;
 				isIDTBlock = false;
@@ -4735,32 +4830,30 @@ public class dualSlicingWithConfigS {
 				TraceNode step = inpress_keep_IDT_old_kept.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, false, pairList, matcher);
 				
-				if(changeType.getType()==StepChangeType.SRCCTL || changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,old_visited)) {//retain statement
+				if(changeType.getType()==StepChangeType.SRCCTL || changeType.getType()==StepChangeType.SRCDAT || (old_retained.contains(step))) {//retain statement
 					if(changeType.getType()==StepChangeType.SRCCTL) {
-						for (VarValue var: step.getReadVariables()) {
-							List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
-							if (vars==null)
-								vars = new ArrayList<>();
-							Pair<Integer, String> pair = new Pair(index,var.getVarName());
-							vars.add(pair);
-							old_ctl_node_function.put(step, vars);
-							index = index + 1;
-						}
+//						for (VarValue var: step.getReadVariables()) {
+//							List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
+//							if (vars==null)
+//								vars = new ArrayList<>();
+//							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//							vars.add(pair);
+//							old_ctl_node_function.put(step, vars);
+//							index = index + 1;
+//						}
 					}
-					else if(changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,old_visited)) {	
+					else if(changeType.getType()==StepChangeType.SRCDAT || changeType.getType()==StepChangeType.DAT ) {	
 						TraceNode matchedStep = changeType.getMatchingStep();
-						for (VarValue var: step.getReadVariables()) {
-							List<Pair<Integer, String>> vars = old_data_node_function.get(step);
-							if (vars==null)
-								vars = new ArrayList<>();
-							Pair<Integer, String> pair = new Pair(index,var.getVarName());
-							vars.add(pair);
-							old_data_node_function.put(step, vars);
-							new_data_node_function.put(matchedStep, vars);
-							index = index + 1;
-						}																
-//						new_data_node_function.put(matchedStep, index);
-//						index = index + 1;
+//						for (VarValue var: step.getReadVariables()) {
+//							List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+//							if (vars==null)
+//								vars = new ArrayList<>();
+//							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//							vars.add(pair);
+//							old_data_node_function.put(step, vars);
+//							new_data_node_function.put(matchedStep, vars);
+//							index = index + 1;
+//						}																
 						//the below if is just for comparing InPreSS vs InPreSS_IDT
 						if(matchedStep!=null) {
 							if(!inpress_keep_IDT_new_kept.contains(matchedStep))
@@ -4775,125 +4868,114 @@ public class dualSlicingWithConfigS {
 						old_retained.add(step);
 					if(!old_kept.contains(step)) {
 						old_kept.add(step);	
-						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));					
+//						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));					
 					}
 				}
 				
-				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,old_visited)) {
-					for (VarValue var: step.getReadVariables()) {
-						List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
-						if (vars==null)
-							vars = new ArrayList<>();
-						Pair<Integer, String> pair = new Pair(index,var.getVarName());
-						vars.add(pair);
-						old_ctl_node_function.put(step, vars);
-						index = index + 1;
-					}
-//					old_ctl_node_function.put(step, index);
-//					index = index + 1;
+				else if (changeType.getType()==StepChangeType.CTL && !(old_retained.contains(step))) {
+//					for (VarValue var: step.getReadVariables()) {
+//						List<Pair<Integer, String>> vars = old_ctl_node_function.get(step);
+//						if (vars==null)
+//							vars = new ArrayList<>();
+//						Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//						vars.add(pair);
+//						old_ctl_node_function.put(step, vars);
+//						index = index + 1;
+//					}
 					if(!old_kept.contains(step)) {
 						old_kept.add(step);	
-						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));					
+//						if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//							old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));					
 					}
 				}
 				
-				else if ((changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,old_visited))||(changeType.getType()==StepChangeType.IDT && !isLastStatement(tc, step,old_visited))) {									
+				else if ((changeType.getType()==StepChangeType.DAT && !(old_retained.contains(step)))||(changeType.getType()==StepChangeType.IDT && !(old_retained.contains(step)))) {									
 					TraceNode matchedStep = changeType.getMatchingStep();	
 					if(!inpress_keep_IDT_new_kept.contains(matchedStep)) { //only in one trace/slice => keep
 						if(!old_kept.contains(step)) {
 							old_kept.add(step);	
-							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));
-							for (VarValue var: step.getReadVariables()) {
-								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
-								if (vars==null)
-									vars = new ArrayList<>();
-								Pair<Integer, String> pair = new Pair(index,var.getVarName());
-								vars.add(pair);
-								old_data_node_function.put(step, vars);
-								new_data_node_function.put(matchedStep, vars);
-								index = index + 1;
-							}
-//							old_data_node_function.put(step, index);								
-//							new_data_node_function.put(matchedStep, index);
-//							index = index + 1;	
+//							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));
+//							for (VarValue var: step.getReadVariables()) {
+//								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+//								if (vars==null)
+//									vars = new ArrayList<>();
+//								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//								vars.add(pair);
+//								old_data_node_function.put(step, vars);
+//								new_data_node_function.put(matchedStep, vars);
+//								index = index + 1;
+//							}
 							if(matchedStep!=null) {
 								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
 									new_kept.add(matchedStep);
-							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+//							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
 								}	
 								if(!inpress_keep_IDT_new_kept.contains(matchedStep))
 									new_dat_kept.add(matchedStep);
 							}
 						}
 					}
-					else {//if the other trace contains but for different reason: from different dependency
-//						System.out.println("step is " + step);
-						boolean found = false;
-						for(TraceNode dominatee:step.getDataDominatee().keySet()) {
-							StepChangeType t = typeChecker.getTypeForPrinting(dominatee, false, pairList, matcher);
-							TraceNode matchedDominatee = t.getMatchingStep();	
-							if(matchedStep.getDataDominatee().keySet().contains(matchedDominatee)) {
-//								System.out.println("it is found in the other trace");
-								found = true;
-							}
-						}
-						if(!found) {
-							if(!old_kept.contains(step)) {
-								old_kept.add(step);	
-								if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-									old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));	
-								for (VarValue var: step.getReadVariables()) {
-									List<Pair<Integer, String>> vars = old_data_node_function.get(step);
-									if (vars==null)
-										vars = new ArrayList<>();
-									Pair<Integer, String> pair = new Pair(index,var.getVarName());
-									vars.add(pair);
-									old_data_node_function.put(step, vars);
-									new_data_node_function.put(matchedStep, vars);
-									index = index + 1;
-								}
-//								old_data_node_function.put(step, index);	
-//								new_data_node_function.put(matchedStep, index);
-//								index = index + 1;	
-								if(matchedStep!=null) {
-									if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-										new_kept.add(matchedStep);
-								        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-											new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
-									}
-									if(!inpress_keep_IDT_new_kept.contains(matchedStep))
-										new_dat_kept.add(matchedStep);
-								}
-							}
-						}
-					}
+//					else {//if the other trace contains but for different reason: from different dependency
+////						System.out.println("step is " + step);
+//						boolean found = false;
+//						for(TraceNode dominatee:step.getDataDominatee().keySet()) {
+//							StepChangeType t = typeChecker.getTypeForPrinting(dominatee, false, pairList, matcher);
+//							TraceNode matchedDominatee = t.getMatchingStep();	
+//							if(matchedStep.getDataDominatee().keySet().contains(matchedDominatee)) {
+////								System.out.println("it is found in the other trace");
+//								found = true;
+//							}
+//						}
+//						if(!found) {
+//							if(!old_kept.contains(step)) {
+//								old_kept.add(step);	
+//								if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//									old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));	
+//								for (VarValue var: step.getReadVariables()) {
+//									List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+//									if (vars==null)
+//										vars = new ArrayList<>();
+//									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//									vars.add(pair);
+//									old_data_node_function.put(step, vars);
+//									new_data_node_function.put(matchedStep, vars);
+//									index = index + 1;
+//								}
+//								if(matchedStep!=null) {
+//									if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+//										new_kept.add(matchedStep);
+//								        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//											new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+//									}
+//									if(!inpress_keep_IDT_new_kept.contains(matchedStep))
+//										new_dat_kept.add(matchedStep);
+//								}
+//							}
+//						}
+//					}
 					if(step.getReadVariables().size()==0) {//it is reaching definition =>keep
 						if(!old_kept.contains(step)) {
 							old_kept.add(step);	
-							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));
-							for (VarValue var: step.getReadVariables()) {
-								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
-								if (vars==null)
-									vars = new ArrayList<>();
-								Pair<Integer, String> pair = new Pair(index,var.getVarName());
-								vars.add(pair);
-								old_data_node_function.put(step, vars);
-								new_data_node_function.put(matchedStep, vars);
-								index = index + 1;
-							}
-//							old_data_node_function.put(step, index);	
-//							new_data_node_function.put(matchedStep, index);
-//							index = index + 1;		
+//							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));
+//							for (VarValue var: step.getReadVariables()) {
+//								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+//								if (vars==null)
+//									vars = new ArrayList<>();
+//								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//								vars.add(pair);
+//								old_data_node_function.put(step, vars);
+//								new_data_node_function.put(matchedStep, vars);
+//								index = index + 1;
+//							}		
 							if(matchedStep!=null) {
 								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
 									new_kept.add(matchedStep);
-							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+//							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
 								}	
 								if(!inpress_keep_IDT_new_kept.contains(matchedStep))
 									new_dat_kept.add(matchedStep);
@@ -4903,26 +4985,23 @@ public class dualSlicingWithConfigS {
 					if(step.isBranch()||step.isLoopCondition() || step.isConditional()) {// it is the control condition that makes control block => keep
 						if(!old_kept.contains(step)) {
 							old_kept.add(step);	
-							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));
-							for (VarValue var: step.getReadVariables()) {
-								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
-								if (vars==null)
-									vars = new ArrayList<>();
-								Pair<Integer, String> pair = new Pair(index,var.getVarName());
-								vars.add(pair);
-								old_data_node_function.put(step, vars);
-								new_data_node_function.put(matchedStep, vars);
-								index = index + 1;
-							}
-//							old_data_node_function.put(step, index);	
-//							new_data_node_function.put(matchedStep, index);
-//							index = index + 1;		
+//							if (!old_kept_sourceCodeLevel.contains(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//								old_kept_sourceCodeLevel.add(getSourceCode(step,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));
+//							for (VarValue var: step.getReadVariables()) {
+//								List<Pair<Integer, String>> vars = old_data_node_function.get(step);
+//								if (vars==null)
+//									vars = new ArrayList<>();
+//								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//								vars.add(pair);
+//								old_data_node_function.put(step, vars);
+//								new_data_node_function.put(matchedStep, vars);
+//								index = index + 1;
+//							}	
 							if(matchedStep!=null) {
 								if(!new_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
 									new_kept.add(matchedStep);
-							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
+//							        if (!new_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//										new_kept_sourceCodeLevel.add(getSourceCode(matchedStep,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));									
 								}
 								if(!inpress_keep_IDT_new_kept.contains(matchedStep))
 									new_dat_kept.add(matchedStep);
@@ -4938,36 +5017,31 @@ public class dualSlicingWithConfigS {
 				TraceNode step = inpress_keep_IDT_new_kept.get(i);
 				StepChangeType changeType = typeChecker.getTypeForPrinting(step, true, pairList, matcher);
 				
-				if(changeType.getType()==StepChangeType.SRCCTL || changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) {//retain statement
+				if(changeType.getType()==StepChangeType.SRCCTL || changeType.getType()==StepChangeType.SRCDAT || (new_retained.contains(step))) {//retain statement
 					if(changeType.getType()==StepChangeType.SRCCTL) {
-						for (VarValue var: step.getReadVariables()) {
-							List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
-							if (vars==null)
-								vars = new ArrayList<>();
-							Pair<Integer, String> pair = new Pair(index,var.getVarName());
-							vars.add(pair);
-							new_ctl_node_function.put(step, vars);
-							index = index + 1;
-						}						
-//						new_ctl_node_function.put(step, index);
-//						index = index + 1;
+//						for (VarValue var: step.getReadVariables()) {
+//							List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
+//							if (vars==null)
+//								vars = new ArrayList<>();
+//							Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//							vars.add(pair);
+//							new_ctl_node_function.put(step, vars);
+//							index = index + 1;
+//						}						
 					}
-					else if(changeType.getType()==StepChangeType.SRCDAT || isLastStatement(tc, step,new_visited)) {
+					else if(changeType.getType()==StepChangeType.SRCDAT || changeType.getType()==StepChangeType.DAT) {
 						TraceNode matchedStep = changeType.getMatchingStep();	
 						if (!new_data_node_function.containsKey(step)) {
-							for (VarValue var: step.getReadVariables()) {
-								List<Pair<Integer, String>> vars = new_data_node_function.get(step);
-								if (vars==null)
-									vars = new ArrayList<>();
-								Pair<Integer, String> pair = new Pair(index,var.getVarName());
-								vars.add(pair);
-								new_data_node_function.put(step, vars);
-								old_data_node_function.put(matchedStep, vars);
-								index = index + 1;
-							}
-//							new_data_node_function.put(step, index);														
-//							old_data_node_function.put(matchedStep, index);
-//							index = index + 1;
+//							for (VarValue var: step.getReadVariables()) {
+//								List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+//								if (vars==null)
+//									vars = new ArrayList<>();
+//								Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//								vars.add(pair);
+//								new_data_node_function.put(step, vars);
+//								old_data_node_function.put(matchedStep, vars);
+//								index = index + 1;
+//							}
 						}		
 						if(matchedStep!=null) {
 							if(!inpress_keep_IDT_old_kept.contains(matchedStep))
@@ -4983,129 +5057,121 @@ public class dualSlicingWithConfigS {
 						new_retained.add(step);
 					if(!new_kept.contains(step)) {
 						new_kept.add(step);	
-						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));					
+//						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));					
 					}
 				}
 				
-				else if (changeType.getType()==StepChangeType.CTL && !isLastStatement(tc, step,new_visited)) {
-					for (VarValue var: step.getReadVariables()) {
-						List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
-						if (vars==null)
-							vars = new ArrayList<>();
-						Pair<Integer, String> pair = new Pair(index,var.getVarName());
-						vars.add(pair);
-						new_ctl_node_function.put(step, vars);
-						index = index + 1;
-					}
-//					new_ctl_node_function.put(step, index);
-//					index = index + 1;
+				else if (changeType.getType()==StepChangeType.CTL && !(new_retained.contains(step))) {
+//					for (VarValue var: step.getReadVariables()) {
+//						List<Pair<Integer, String>> vars = new_ctl_node_function.get(step);
+//						if (vars==null)
+//							vars = new ArrayList<>();
+//						Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//						vars.add(pair);
+//						new_ctl_node_function.put(step, vars);
+//						index = index + 1;
+//					}
 					if(!new_kept.contains(step)) {
 						new_kept.add(step);	
-						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));					
+//						if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//							new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));					
 					}
 				}
 				
-				else if ((changeType.getType()==StepChangeType.DAT && !isLastStatement(tc, step,new_visited))||(changeType.getType()==StepChangeType.IDT && !isLastStatement(tc, step,new_visited))) {
+				else if ((changeType.getType()==StepChangeType.DAT && !(new_retained.contains(step)))||(changeType.getType()==StepChangeType.IDT && !(new_retained.contains(step)))) {
 					TraceNode matchedStep = changeType.getMatchingStep();	
 					if(!inpress_keep_IDT_old_kept.contains(matchedStep)) { //only in one trace/slice => keep
 						if(!new_kept.contains(step)) {
 							new_kept.add(step);	
-							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));	
+//							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));	
 							if (!new_data_node_function.containsKey(step)) {
-								for (VarValue var: step.getReadVariables()) {
-									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
-									if (vars==null)
-										vars = new ArrayList<>();
-									Pair<Integer, String> pair = new Pair(index,var.getVarName());
-									vars.add(pair);
-									new_data_node_function.put(step, vars);
-									old_data_node_function.put(matchedStep, vars);
-									index = index + 1;
-								}
-//								new_data_node_function.put(step, index);	
-//								old_data_node_function.put(matchedStep, index);
-//								index = index + 1;	
+//								for (VarValue var: step.getReadVariables()) {
+//									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+//									if (vars==null)
+//										vars = new ArrayList<>();
+//									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//									vars.add(pair);
+//									new_data_node_function.put(step, vars);
+//									old_data_node_function.put(matchedStep, vars);
+//									index = index + 1;
+//								}	
 							}
 							if(matchedStep!=null) {
 								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
 									old_kept.add(matchedStep);
-							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+//							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
 								}
 								if(!inpress_keep_IDT_old_kept.contains(matchedStep))
 									old_dat_kept.add(matchedStep);
 							}
 						}
 					}
-					else {//if the other trace contains but for different reason: from different dependency
-//						System.out.println("step is " + step);
-						boolean found = false;
-						for(TraceNode dominatee:step.getDataDominatee().keySet()) {
-							StepChangeType t = typeChecker.getTypeForPrinting(dominatee, true, pairList, matcher);
-							TraceNode matchedDominatee = t.getMatchingStep();	
-							if(matchedStep.getDataDominatee().keySet().contains(matchedDominatee))
-								found = true;
-						}
-						if(!found) {
-							if(!new_kept.contains(step)) {
-								new_kept.add(step);	
-								if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-									new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));	
-								if (!new_data_node_function.containsKey(step)) {
-									for (VarValue var: step.getReadVariables()) {
-										List<Pair<Integer, String>> vars = new_data_node_function.get(step);
-										if (vars==null)
-											vars = new ArrayList<>();
-										Pair<Integer, String> pair = new Pair(index,var.getVarName());
-										vars.add(pair);
-										new_data_node_function.put(step, vars);
-										old_data_node_function.put(matchedStep, vars);
-										index = index + 1;
-									}
-//									new_data_node_function.put(step, index);	
-//									old_data_node_function.put(matchedStep, index);
-//									index = index + 1;	
-								}
-								if(matchedStep!=null) {
-									if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
-										old_kept.add(matchedStep);
-								        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-											old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
-									}
-									if(!inpress_keep_IDT_old_kept.contains(matchedStep))
-										old_dat_kept.add(matchedStep);
-								}
-							}
-						}
-					}
+//					else {//if the other trace contains but for different reason: from different dependency
+////						System.out.println("step is " + step);
+//						boolean found = false;
+//						for(TraceNode dominatee:step.getDataDominatee().keySet()) {
+//							StepChangeType t = typeChecker.getTypeForPrinting(dominatee, true, pairList, matcher);
+//							TraceNode matchedDominatee = t.getMatchingStep();	
+//							if(matchedStep.getDataDominatee().keySet().contains(matchedDominatee))
+//								found = true;
+//						}
+//						if(!found) {
+//							if(!new_kept.contains(step)) {
+//								new_kept.add(step);	
+//								if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//									new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));	
+//								if (!new_data_node_function.containsKey(step)) {
+//									for (VarValue var: step.getReadVariables()) {
+//										List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+//										if (vars==null)
+//											vars = new ArrayList<>();
+//										Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//										vars.add(pair);
+//										new_data_node_function.put(step, vars);
+//										old_data_node_function.put(matchedStep, vars);
+//										index = index + 1;
+//									}
+////									new_data_node_function.put(step, index);	
+////									old_data_node_function.put(matchedStep, index);
+////									index = index + 1;	
+//								}
+//								if(matchedStep!=null) {
+//									if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
+//										old_kept.add(matchedStep);
+//								        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//											old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+//									}
+//									if(!inpress_keep_IDT_old_kept.contains(matchedStep))
+//										old_dat_kept.add(matchedStep);
+//								}
+//							}
+//						}
+//					}
 					if(step.getReadVariables().size()==0) {//it is reaching definition =>keep
 						if(!new_kept.contains(step)) {
 							new_kept.add(step);	
-							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));	
+//							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));	
 							if (!new_data_node_function.containsKey(step)) {
-								for (VarValue var: step.getReadVariables()) {
-									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
-									if (vars==null)
-										vars = new ArrayList<>();
-									Pair<Integer, String> pair = new Pair(index,var.getVarName());
-									vars.add(pair);
-									new_data_node_function.put(step, vars);
-									old_data_node_function.put(matchedStep, vars);
-									index = index + 1;
-								}
-//								new_data_node_function.put(step, index);	
-//								old_data_node_function.put(matchedStep, index);
-//								index = index + 1;		
+//								for (VarValue var: step.getReadVariables()) {
+//									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+//									if (vars==null)
+//										vars = new ArrayList<>();
+//									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//									vars.add(pair);
+//									new_data_node_function.put(step, vars);
+//									old_data_node_function.put(matchedStep, vars);
+//									index = index + 1;
+//								}	
 							}
 							if(matchedStep!=null) {
 								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
 									old_kept.add(matchedStep);
-							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+//							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
 								}
 								if(!inpress_keep_IDT_old_kept.contains(matchedStep))
 									old_dat_kept.add(matchedStep);
@@ -5115,28 +5181,25 @@ public class dualSlicingWithConfigS {
 					if(step.isBranch()||step.isLoopCondition() || step.isConditional()) {// it is the control condition that makes control block => keep
 						if(!new_kept.contains(step)) {
 							new_kept.add(step);	
-							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
-								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));		
+//							if (!new_kept_sourceCodeLevel.contains(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping)))
+//								new_kept_sourceCodeLevel.add(getSourceCode(step,true,matcher,newSlicer4J, newSlicer4JBytecodeMapping));		
 							if (!new_data_node_function.containsKey(step)) {
-								for (VarValue var: step.getReadVariables()) {
-									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
-									if (vars==null)
-										vars = new ArrayList<>();
-									Pair<Integer, String> pair = new Pair(index,var.getVarName());
-									vars.add(pair);
-									new_data_node_function.put(step, vars);
-									old_data_node_function.put(matchedStep, vars);
-									index = index + 1;
-								}
-//								new_data_node_function.put(step, index);	
-//								old_data_node_function.put(matchedStep, index);
-//								index = index + 1;	
+//								for (VarValue var: step.getReadVariables()) {
+//									List<Pair<Integer, String>> vars = new_data_node_function.get(step);
+//									if (vars==null)
+//										vars = new ArrayList<>();
+//									Pair<Integer, String> pair = new Pair(index,var.getVarName());
+//									vars.add(pair);
+//									new_data_node_function.put(step, vars);
+//									old_data_node_function.put(matchedStep, vars);
+//									index = index + 1;
+//								}
 							}
 							if(matchedStep!=null) {
 								if(!old_kept.contains(matchedStep)) {//add the symmetric data and identical to other trace
 									old_kept.add(matchedStep);
-							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
-										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
+//							        if (!old_kept_sourceCodeLevel.contains(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping)))
+//										old_kept_sourceCodeLevel.add(getSourceCode(matchedStep,false,matcher,oldSlicer4J, oldSlicer4JBytecodeMapping));									
 								}
 								if(!inpress_keep_IDT_old_kept.contains(matchedStep))
 									old_dat_kept.add(matchedStep);
@@ -5219,12 +5282,13 @@ public class dualSlicingWithConfigS {
 		}
 	}
 
-	private void InPreSS(String basePath, String projectName, String bugID, TestCase tc, boolean b, String proPath,
+	private void InPreSS(String basePath, String projectName, String bugID, TestCase tc, int assertionLine, boolean b, String proPath,
 			TraceNode observedFaultNode, Trace newTrace, Trace oldTrace, PairList PairList, DiffMatcher matcher,
 			int oldTraceTime, int newTraceTime, int codeTime, int traceTime, List<RootCauseNode> rootList,
 			boolean debug, List<TraceNode> new_visited, List<TraceNode> old_visited, List<TraceNode> new_kept,
-			List<TraceNode> old_kept) throws IOException {
+			List<TraceNode> old_kept, List<TraceNode> new_retained, List<TraceNode> old_retained) throws IOException {
 		List<TraceNode> new_workList = new ArrayList<>();
+		
 		HashMap<TraceNode, List<Pair<TraceNode, String>>> new_data_map = new HashMap<>();
 		HashMap<TraceNode, List<TraceNode>> new_ctl_map = new HashMap<>();
 
@@ -5238,10 +5302,7 @@ public class dualSlicingWithConfigS {
 		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> old_CashDeps = new HashMap<>();
 		HashMap<TraceNode, HashMap<Pair<TraceNode, String>, String>> new_CashDeps = new HashMap<>();
 
-		new_visited.add(observedFaultNode);
-		new_workList.add(observedFaultNode);
-		newTheReasonToBeInResult.put(observedFaultNode, "the failed assertion");
-				
+			
 		System.out.println("#############################");
 		System.out.println("Starting Working list");
 
@@ -5271,11 +5332,35 @@ public class dualSlicingWithConfigS {
 		DynamicControlFlowGraph new_dcfg = new_slicer.prepareGraph();
 
 		
-			getMappingOfTraces(proPath, true, newTrace, newSlicer4J, newSlicer4JBytecodeMapping);
-			getMappingOfTraces(proPath, false, oldTrace, oldSlicer4J, oldSlicer4JBytecodeMapping);
+		getMappingOfTraces(proPath, true, newTrace, newSlicer4J, newSlicer4JBytecodeMapping);
+		getMappingOfTraces(proPath, false, oldTrace, oldSlicer4J, oldSlicer4JBytecodeMapping);
 		
-		
+		new_visited.add(observedFaultNode);
+		new_kept.add(observedFaultNode);
+		new_workList.add(observedFaultNode);
+		new_retained.add(observedFaultNode);	
 		StepChangeTypeChecker typeChecker = new StepChangeTypeChecker(newTrace, oldTrace);
+		StepChangeType changeType = typeChecker.getType(observedFaultNode, true, PairList, matcher);
+		TraceNode observedFaultNodeMapping = changeType.getMatchingStep();
+		if(observedFaultNodeMapping!=null) {
+			old_retained.add(observedFaultNodeMapping);
+			old_kept.add(observedFaultNodeMapping);
+			old_visited.add(observedFaultNodeMapping);
+			old_workList.add(observedFaultNode);
+		}
+		else {
+//			old_retained.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+//			old_kept.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+//			old_visited.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+//			old_workList.add(oldTrace.getExecutionList().get(oldTrace.getExecutionList().size()-2));
+			old_retained.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+			old_kept.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+			old_visited.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+			old_workList.add(getAssertionStatement(oldTrace.getExecutionList(),tc,assertionLine,oldSlicer4J,oldSlicer4JBytecodeMapping));
+		}
+		
+//		newTheReasonToBeInResult.put(observedFaultNode, "the failed assertion");
+			
 		
 		Long dual_start_time = System.currentTimeMillis();
 		while (!new_workList.isEmpty() || !old_workList.isEmpty()) {
@@ -5286,7 +5371,7 @@ public class dualSlicingWithConfigS {
 						old_slicer, new_CashDeps, old_CashDeps, newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
 						oldSlicer4JBytecodeMapping, true, step, newTrace, oldTrace, new_visited, new_workList,
 						old_visited, old_workList, true, typeChecker, PairList, matcher, new_data_map, new_ctl_map,
-						proPath, bugID);
+						proPath, bugID,new_retained,old_retained);
 			}
 			////////////////////////////////////////////////////////////////////////////////////////
 			while (!old_workList.isEmpty()) {
@@ -5296,7 +5381,7 @@ public class dualSlicingWithConfigS {
 						old_slicer, old_CashDeps, new_CashDeps, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping,
 						newSlicer4JBytecodeMapping, true, step, oldTrace, newTrace, old_visited, old_workList,
 						new_visited, new_workList, false, typeChecker, PairList, matcher, old_data_map, old_ctl_map,
-						proPath, bugID);
+						proPath, bugID,old_retained,new_retained);
 			}
 		}
 		/// ################################################################
@@ -5315,10 +5400,10 @@ public class dualSlicingWithConfigS {
 		HashMap<Integer, Integer> newTestCaseChunkInfo = new HashMap<>();
 		Collections.sort(old_visited, new TraceNodePairOrderComparator(oldSlicer4J, oldSlicer4JBytecodeMapping));
 		Collections.sort(new_visited, new TraceNodePairOrderComparator(newSlicer4J, newSlicer4JBytecodeMapping));
-		getChangeChunks(typeChecker, matcher, old_visited,new_visited,oldChangeChunkInfo,newChangeChunkInfo);
+//		getChangeChunks(typeChecker, matcher, old_visited,new_visited,oldChangeChunkInfo,newChangeChunkInfo);
 //		getChangeChunks(typeChecker, InPreSSPairList, matcher, old_visited,new_visited,oldChangeChunkInfo,newChangeChunkInfo);
-		getTestCaseChunks(tc,old_visited,new_visited,oldTestCaseChunkInfo,newTestCaseChunkInfo);
-		getCommonBlocksChunks(typeChecker, matcher, tc,old_visited,new_visited,oldCommonChunkInfo,newCommonChunkInfo);
+//		getTestCaseChunks(tc,old_visited,new_visited,oldTestCaseChunkInfo,newTestCaseChunkInfo);
+//		getCommonBlocksChunks(typeChecker, matcher, tc,old_visited,new_visited,oldCommonChunkInfo,newCommonChunkInfo);
 //		getCommonBlocksChunks(typeChecker, InPreSSPairList, matcher, tc,old_visited,new_visited,oldCommonChunkInfo,newCommonChunkInfo);
 		//System.out.println("##############Printing Abstraction to Graph##############");
 
@@ -5328,8 +5413,8 @@ public class dualSlicingWithConfigS {
 		HashMap<TraceNode, List<TraceNode>> both_old_ctl_map = old_ctl_map;
 		
 		System.out.println("##############InPress##############");		
-		List<TraceNode> old_retained = new ArrayList<>();		
-		List<TraceNode> new_retained = new ArrayList<>();	
+//		List<TraceNode> old_retained = new ArrayList<>();		
+//		List<TraceNode> new_retained = new ArrayList<>();	
 		List<String> old_kept_sourceCodeLevel = new ArrayList<>();		
 		List<String> new_kept_sourceCodeLevel = new ArrayList<>();	
 		
@@ -5338,8 +5423,10 @@ public class dualSlicingWithConfigS {
 		
 		//keep statements in the test that are kept in dual slice:
 //		addingClientTestNodes(tc, old_visited, new_visited, old_kept, new_kept, old_retained, new_retained, oldSlicer4J, newSlicer4J, oldSlicer4JBytecodeMapping, newSlicer4JBytecodeMapping);
-		int oldRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, oldTrace.getExecutionList(),old_visited,oldSlicer4J,oldSlicer4JBytecodeMapping);
-		int newRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, newTrace.getExecutionList(),new_visited,newSlicer4J,newSlicer4JBytecodeMapping);
+		int oldRetainedTestRemovedByDual = 0;
+		oldRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, oldTrace.getExecutionList(),old_visited,oldSlicer4J,oldSlicer4JBytecodeMapping);
+		int newRetainedTestRemovedByDual = 0;
+		newRetainedTestRemovedByDual = getRetainedTestRemovedByDual(tc, newTrace.getExecutionList(),new_visited,newSlicer4J,newSlicer4JBytecodeMapping);
 		
 
 		HashMap<Integer, List<TraceNode>> oldCtlBlockNodes = new HashMap<>();
@@ -5354,28 +5441,39 @@ public class dualSlicingWithConfigS {
 				oldCtlBlockNodes, newCtlBlockNodes, old_retained, new_retained,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
 		long inPreSS_finish_time = System.currentTimeMillis();
 		int inPreSS_Time = (int) (inPreSS_finish_time - inPreSS_start_time);
-		if(debug)
-			PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
-				oldCommonChunkInfo, newCommonChunkInfo,
-				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
-		else {
-			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
-				PrintD4JPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
-						oldCommonChunkInfo, newCommonChunkInfo,
-						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
-			}
-			else
-				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
-				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
-				oldCommonChunkInfo, newCommonChunkInfo,
-				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
-			}
+//		if(debug)
+//			PrintFinalResultAll(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+//				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+//				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+//				oldCommonChunkInfo, newCommonChunkInfo,
+//				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual);	
+//		else {
+//			if(projectName.equals("Chart")||projectName.equals("Closure")||projectName.equals("Lang")||projectName.equals("Math")||projectName.equals("Mockito")||projectName.equals("Time")) {
+//				PrintD4JPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+//						old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+//						traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+//						oldCommonChunkInfo, newCommonChunkInfo,
+//						oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);
+//			}
+//			else
+//				PrintPaperResults(tc,basePath, projectName, bugID, newTrace, oldTrace, new_visited, old_visited, new_kept, old_kept, new_retained, 
+//				old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+//				traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,oldTestCaseChunkInfo,newTestCaseChunkInfo,
+//				oldCommonChunkInfo, newCommonChunkInfo,
+//				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
+//			}
 		
+	}
+
+	private TraceNode getAssertionStatement(List<TraceNode> trace,TestCase tc , int assertoinLine,BiMap<TraceNode, String> Slicer4JMapping, HashMap<String, List<String>> Slicer4JBytecodeMapping) {
+		Collections.sort(trace, new TraceNodePairOrderComparator(Slicer4JMapping, Slicer4JBytecodeMapping));
+		for(int i=trace.size()-1;i>=0;i--) {
+			TraceNode step =trace.get(i); 
+			String ClassName = step.getClassCanonicalName();		
+			if (tc.testClass.equals(ClassName) && step.getLineNumber()==assertoinLine) 
+				return step;
+		}
+		return null;
 	}
 
 	private void updateWorklistKeepingIdentical(
@@ -5388,7 +5486,7 @@ public class dualSlicingWithConfigS {
 			Trace otherTrace, List<TraceNode> visited, List<TraceNode> workList, List<TraceNode> other_visited,
 			List<TraceNode> other_workList, boolean isNew, StepChangeTypeChecker typeChecker, PairList pairList,
 			DiffMatcher matcher, HashMap<TraceNode, List<Pair<TraceNode, String>>> data_map,
-			HashMap<TraceNode, List<TraceNode>> ctl_map, String proPath, String bugID) {
+			HashMap<TraceNode, List<TraceNode>> ctl_map, String proPath, String bugID,List<TraceNode> retained,List<TraceNode> OtherRetained) {
 
 		StepChangeType changeType = typeChecker.getType(step, isNew, pairList, matcher);
 		String onNew = isNew ? "new" : "old";
@@ -5396,12 +5494,18 @@ public class dualSlicingWithConfigS {
 		////////////////////////////////////////////////////////////////////
 		if (changeType.getType() == StepChangeType.SRC) {
 //			System.out.println("debug: node is src diff");
-			TraceNode matchedStep = changeType.getMatchingStep();	
+			TraceNode matchedStep = changeType.getMatchingStep();
+//			if(!retained.contains(step)) {
+//				retained.add(step);
+//			}
 			List<Integer> matchPositions = getSlicer4JMappedNode(matchedStep, OtherSlicer4JMapping, otherSlicer4JBytecodeMapping);
 			if (matchPositions != null) {
 				if(!other_visited.contains(matchedStep)) { 
 					other_visited.add(matchedStep);
-					other_workList.add(matchedStep);					
+					other_workList.add(matchedStep);
+//					if(!OtherRetained.contains(matchedStep)) {
+//						OtherRetained.add(matchedStep);
+//					}
 				}
 			}
 		}
@@ -5500,75 +5604,79 @@ public class dualSlicingWithConfigS {
 					}
 				}
 //			}
-			  if(d.first().isException())
-			  { 
-				  TraceNode nextStep = d.first().getStepInPrevious(); 
-				  //System.out.println("debug: prev step " + nextStep); 
-				  List<TraceNode> ctlDeps = ctl_map.get(step); 
-				  if(ctlDeps==null) {
-					  ctlDeps = new ArrayList<>(); 
-				   } 
-				  ctlDeps.add(nextStep); 
-				  ctl_map.put(step, ctlDeps); 
-				  Positions = getSlicer4JMappedNode(nextStep,Slicer4JMapping,Slicer4JBytecodeMapping);
-				  if(Positions!=null) { 
-					  if(!visited.contains(nextStep)) {
-						  workList.add(nextStep); 
-						  visited.add(nextStep); 
-						} 
-				  } 
-			  } 
+//			  if(d.first().isException())//April 24
+//			  { 
+//				  TraceNode nextStep = d.first().getStepInPrevious(); 
+//				  //System.out.println("debug: prev step " + nextStep); 
+//				  List<TraceNode> ctlDeps = ctl_map.get(step); 
+//				  if(ctlDeps==null) {
+//					  ctlDeps = new ArrayList<>(); 
+//				   } 
+//				  ctlDeps.add(nextStep); 
+//				  ctl_map.put(step, ctlDeps); 
+//				  Positions = getSlicer4JMappedNode(nextStep,Slicer4JMapping,Slicer4JBytecodeMapping);
+//				  if(Positions!=null) { 
+//					  if(!visited.contains(nextStep)) {
+//						  workList.add(nextStep); 
+//						  visited.add(nextStep); 
+//						} 
+//				  } 
+//			  } 
 			 
 		}
 	}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-private int CalculateWastedEffort(List<TraceNode> visited, List<TraceNode> retained) {
-int NoStmt = 0;
-int traversed = 0;
-Collections.sort(visited, new TraceNodeOrderComparator());
-for(int i=visited.size()-1;i>=0;i--) {
-traversed++;
-if(retained.contains(visited.get(i)))
-NoStmt ++;
-if(NoStmt==retained.size())
-return traversed;
-}
-return traversed;
+private int CalculateWastedEffort(List<TraceNode> visited, List<TraceNode> retained,BiMap<TraceNode, String> Slicer4JMapping,
+		HashMap<String, List<String>> Slicer4JBytecodeMapping) {
+	int NoStmt = 0;
+	int traversed = 0;
+	Collections.sort(visited, new TraceNodePairOrderComparator(Slicer4JMapping, Slicer4JBytecodeMapping));
+	for(int i=visited.size()-1;i>=0;i--) {
+	traversed++;
+	if(retained.contains(visited.get(i)))
+		NoStmt ++;
+	if(NoStmt==retained.size())
+	return traversed;
+	}
+	return traversed;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-private boolean CanFindTheBug(int EInsp, List<TraceNode> old_visited, List<TraceNode> new_visited,List<TraceNode> old_retained, List<TraceNode> new_retained) {
-boolean found = false;
-int count_old = 0;
-int count_new = 0;
-Collections.sort(old_visited, new TraceNodeOrderComparator());
-Collections.sort(new_visited, new TraceNodeOrderComparator());
-if(old_visited.size()-EInsp>=0)
-for(int i=old_visited.size()-1;i>=old_visited.size()-EInsp;i--) {
-if(old_retained.contains(old_visited.get(i)))
-count_old ++;
-}
-else
-for(int i=old_visited.size()-1;i>=0;i--) {
-if(old_retained.contains(old_visited.get(i)))
-count_old ++;
-}
-if(new_visited.size()-EInsp>=0)
-for(int i=new_visited.size()-1;i>=new_visited.size()-EInsp;i--) {
-if(new_retained.contains(new_visited.get(i)))
-count_new ++;
-}
-else
-for(int i=new_visited.size()-1;i>=0;i--) {
-if(new_retained.contains(new_visited.get(i)))
-count_new ++;
-}
-if(count_old==old_retained.size() && count_new==new_retained.size())
-found = true;
-return found;		
+private boolean CanFindTheBug(int EInsp, List<TraceNode> old_visited, List<TraceNode> new_visited,List<TraceNode> old_retained, List<TraceNode> new_retained,
+		BiMap<TraceNode, String> NewSlicer4JMapping, BiMap<TraceNode, String> OldSlicer4JMapping,
+		HashMap<String, List<String>> NewSlicer4JBytecodeMapping,
+		HashMap<String, List<String>> OldSlicer4JBytecodeMapping) {
+	boolean found = false;
+	int count_old = 0;
+	int count_new = 0;
+	Collections.sort(old_visited, new TraceNodePairOrderComparator(OldSlicer4JMapping, OldSlicer4JBytecodeMapping));
+	Collections.sort(new_visited, new TraceNodePairOrderComparator(NewSlicer4JMapping, NewSlicer4JBytecodeMapping));
+	if(old_visited.size()-EInsp>=0)
+	for(int i=old_visited.size()-1;i>=old_visited.size()-EInsp;i--) {
+	if(old_retained.contains(old_visited.get(i)))
+	count_old ++;
+	}
+	else
+	for(int i=old_visited.size()-1;i>=0;i--) {
+	if(old_retained.contains(old_visited.get(i)))
+	count_old ++;
+	}
+	if(new_visited.size()-EInsp>=0)
+	for(int i=new_visited.size()-1;i>=new_visited.size()-EInsp;i--) {
+	if(new_retained.contains(new_visited.get(i)))
+	count_new ++;
+	}
+	else
+	for(int i=new_visited.size()-1;i>=0;i--) {
+	if(new_retained.contains(new_visited.get(i)))
+	count_new ++;
+	}
+	if(count_old==old_retained.size() && count_new==new_retained.size())
+	found = true;
+	return found;		
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
