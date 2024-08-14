@@ -186,21 +186,27 @@ public class generateResults {
 //		System.out.println(simulator.getObservedFault());
 		TraceNode observedFaultNode = simulator.getObservedFault();
 		
+//		System.out.println(observedFaultNode);
 		
-		System.out.println("###############Dual slicing##################");
-		if (eraseorDual.equals("S")){
-			dualSlicingWithConfigS configS = new dualSlicingWithConfigS();
-//			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
-//				configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
-//			else
-				configS.corex(basePath,projectName, bugID,tc, assertionLine,true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug,tool2Run);	
+		if(tool2Run.equals("dual") || tool2Run.equals("InPreSS") || tool2Run.equals("all")) {
+			if (eraseorDual.equals("S")){
+				InPreSSS configS = new InPreSSS();
+				configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
+			}
+			else if (eraseorDual.equals("E")){
+				InPreSSE configE = new InPreSSE();
+				configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+			}				
 		}
-		else if (eraseorDual.equals("E")){
-			dualSlicingWithConfigE configE = new dualSlicingWithConfigE();
-//			if(tool2Run.equals("dual") || tool2Run.equals("InPreSS"))
-//				configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
-//			else
+		else if (tool2Run.equals("corex") || tool2Run.equals("all")){
+			if (eraseorDual.equals("S")){
+				CoReXS configS = new CoReXS();
+				configS.corex(basePath,projectName, bugID,tc, assertionLine,true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug,tool2Run);	
+			}
+		    else if (eraseorDual.equals("E")){
+				CoReXE configE = new CoReXE();
 				configE.corex(basePath,projectName, bugID,tc, assertionLine,false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug,tool2Run);
+		    }
 		}
 		
 		return;

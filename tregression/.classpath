@@ -11,5 +11,14 @@
 	<classpathentry kind="lib" path="tregression/lib/poi-ooxml-3.11-20141221.jar"/>
 	<classpathentry kind="lib" path="tregression/lib/poi-ooxml-schemas-3.11-20141221.jar"/>
 	<classpathentry kind="lib" path="tregression/lib/xmlbeans-2.6.0.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/experiment.utils"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/microbat"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/microbat_instrumentator"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/microbat_junit_test"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/mutation"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/sav.commons"/>
+	<classpathentry kind="lib" path="tregression/lib/org.eclipse.core.runtime-3.18.0.jar"/>
+	<classpathentry kind="lib" path="/InPreSS/deps/lib/org.eclipse.equinox.common-3.12.0.jar"/>
+	<classpathentry kind="lib" path="/microbat/lib/org.eclipse.jdt.core-3.10.0.jar"/>
 	<classpathentry kind="output" path="tregression/bin"/>
 </classpath>

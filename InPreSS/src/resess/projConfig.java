@@ -59,7 +59,7 @@ public class projConfig extends Defects4jProjectConfig{
 			if(bugID==1){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "E";
-				
+				config.assertionLine = 176;
 //				config.assertionLine = getAssertionLine(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 //				config.configFile = "S";
 //				if(config.configFile.contentEquals("S"))
@@ -69,6 +69,7 @@ public class projConfig extends Defects4jProjectConfig{
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 //				config.configFile = "E";
 				config.configFile = "S";
+				config.assertionLine = 86;
 //				if(config.configFile.contentEquals("S"))
 //					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -81,8 +82,9 @@ public class projConfig extends Defects4jProjectConfig{
 			}
 			else if(bugID==4){
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
-				config.configFile = "E";
-//				config.configFile = "S";
+//				config.configFile = "E";
+				config.configFile = "S";
+				config.assertionLine = 69;
 //				if(config.configFile.contentEquals("S"))
 //					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -90,6 +92,7 @@ public class projConfig extends Defects4jProjectConfig{
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);		
 				config.configFile = "E";
 //				config.configFile = "S";
+				config.assertionLine = 79;
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath, "target"+File.separator+"test-classes", "target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -268,7 +271,7 @@ public class projConfig extends Defects4jProjectConfig{
 				}
 				config = new projConfig("src"+File.separator+"test"+File.separator+"java", "src"+File.separator+"main"+File.separator+"java", "target"+File.separator+"test-classes", "target"+File.separator+"classes", "target", projectName, bugID);	
 				config.configFile = ereasOrSlicer;
-				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
+//				config.assertionLine = getAssertionLine(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 				if(config.configFile.contentEquals("S"))
 					getSlice(baseProjPath,  "target"+File.separator+"test-classes","target"+File.separator+"classes", projectName, bugID,"target"+File.separator+"dependency");
 			}
@@ -508,7 +511,8 @@ private static int getAssertionLine(String baseProj, String testFolder, String c
     String proPath = baseProj + projectName + "/" + bugID;
 	String buggyPath = proPath + "/bug/";
 	String failingFile = buggyPath  + "failing_tests";
-	File file = new File(failingFile);
+	Path path1 = Paths.get(failingFile);
+	File file = new File(path1.toAbsolutePath().toString());
 	BufferedReader reader = new BufferedReader(new FileReader(file));
 	String testClass = "";
 	String testMethod = "";
@@ -572,7 +576,9 @@ private static int getAssertionLine(String baseProj, String testFolder, String c
 		}					
 	}
 	reader.close();
-	return Integer.valueOf(sliceLine);
+	if(!sliceLine.equals(""))
+		return Integer.valueOf(sliceLine);
+	return 0;
 	
 	}
 private static void saveBugAndTerminate(String baseProjPath, String projectName2, int bugID2) {
