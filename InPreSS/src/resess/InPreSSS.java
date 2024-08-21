@@ -372,11 +372,11 @@ public class InPreSSS {
 				oldCommonChunkInfo, newCommonChunkInfo,
 				oldRetainedTestRemovedByDual,newRetainedTestRemovedByDual,old_kept_sourceCodeLevel,new_kept_sourceCodeLevel);	
 			
-			PrintResults(tc,basePath, projectName, bugID, typeChecker,PairList, matcher, newTrace, oldTrace,  new_visited, old_visited, new_kept,old_kept,
-					new_retained, old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
-									traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,
-									oldCommonChunkInfo, newCommonChunkInfo, old_kept_sourceCodeLevel,new_kept_sourceCodeLevel,newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
-									oldSlicer4JBytecodeMapping);
+//			PrintResults(tc,basePath, projectName, bugID, typeChecker,PairList, matcher, newTrace, oldTrace,  new_visited, old_visited, new_kept,old_kept,
+//					new_retained, old_retained, newDataBlockNodes, oldDataBlockNodes, newCtlBlockNodes, oldCtlBlockNodes, oldTraceTime, newTraceTime, codeTime, 
+//									traceTime, dual_Time, inPreSS_Time,oldChangeChunkInfo,newChangeChunkInfo,
+//									oldCommonChunkInfo, newCommonChunkInfo, old_kept_sourceCodeLevel,new_kept_sourceCodeLevel,newSlicer4J, oldSlicer4J, newSlicer4JBytecodeMapping,
+//									oldSlicer4JBytecodeMapping);
 		}
             		   
 	}

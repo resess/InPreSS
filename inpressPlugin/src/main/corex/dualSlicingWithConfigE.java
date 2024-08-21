@@ -23,7 +23,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Row;
-import ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer;
+//import ca.ubc.ece.resess.slicer.dynamic.slicer4j.Slicer;
 import microbat.codeanalysis.bytecode.ByteCodeParser;
 import microbat.codeanalysis.bytecode.MethodFinderByLine;
 import microbat.model.BreakPoint;
@@ -3110,19 +3110,19 @@ public class dualSlicingWithConfigE {
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
-	public Slicer setupSlicing(Path root, String jarPath, Path outDir, Path sliceLogger) {
-		Slicer slicer = new Slicer();
-		slicer.setPathJar(jarPath);
-		slicer.setOutDir(outDir.toString());
-		slicer.setLoggerJar(sliceLogger.toString());
-	
-		slicer.setFileToParse(outDir + File.separator + "trace.log");
-		slicer.setStubDroidPath(
-				root.getParent().toString() + File.separator + "models" + File.separator + "summariesManual");
-		slicer.setTaintWrapperPath(root.getParent().toString() + File.separator + "models" + File.separator
-				+ "EasyTaintWrapperSource.txt");
-		return slicer;
-	}
+//	public Slicer setupSlicing(Path root, String jarPath, Path outDir, Path sliceLogger) {
+//		Slicer slicer = new Slicer();
+//		slicer.setPathJar(jarPath);
+//		slicer.setOutDir(outDir.toString());
+//		slicer.setLoggerJar(sliceLogger.toString());
+//	
+//		slicer.setFileToParse(outDir + File.separator + "trace.log");
+//		slicer.setStubDroidPath(
+//				root.getParent().toString() + File.separator + "models" + File.separator + "summariesManual");
+//		slicer.setTaintWrapperPath(root.getParent().toString() + File.separator + "models" + File.separator
+//				+ "EasyTaintWrapperSource.txt");
+//		return slicer;
+//	}
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
