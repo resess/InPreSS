@@ -30,7 +30,6 @@ public class run {
 		//String testcase = "com.google.javascript.jscomp.IntegrationTest::testIssue787"; //clousr(1)
 		String testcase = args[3];
 		
-		String tool2Run = args[4];
 
 		String EreasOrSlicer = "E";
 
@@ -44,7 +43,7 @@ public class run {
 		List<String> excludedClassNames = new ArrayList<>();
 	  
 		generatoror.generateResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, 
-				true, true, true, 3, true, true, config.assertionLine, config, testcase, includedClassNames,excludedClassNames, config.configFile,debug,tool2Run);
+				true, true, true, 3, true, true, config.assertionLine, config, testcase, includedClassNames,excludedClassNames, config.configFile,debug);
 	    return;
 
 	}	

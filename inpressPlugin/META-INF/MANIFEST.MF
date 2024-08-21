@@ -3,7 +3,7 @@ Class-Path: .
 Main-Class: corex.handler.SeparateVersionHandler
 Bundle-ManifestVersion: 2
 Bundle-Name: corex
-Bundle-SymbolicName: corex;singleton:=true
+Bundle-SymbolicName: inpressPlugin;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Require-Bundle: microbat;bundle-version="1.0.0",
  sav.commons;bundle-version="1.0.0",

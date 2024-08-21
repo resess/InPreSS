@@ -47,7 +47,7 @@ public class generateResults {
 	public void generateResult(String basePath, String projectName, String bugID, String proPath, String buggyPath, String fixPath, 
 			boolean isReuse, boolean useSliceBreaker,
 			boolean enableRandom, int breakLimit, boolean requireVisualization, 
-			boolean allowMultiThread, int assertionLine, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual, boolean debug, String tool2Run) {
+			boolean allowMultiThread, int assertionLine, Defects4jProjectConfig config, String testcase, List<String> includedClassNames, List<String> excludedClassNames, String eraseorDual, boolean debug) {
 		List<TestCase> tcList;
 		TestCase workingTC = null;
 		try {
@@ -60,7 +60,7 @@ public class generateResults {
 				workingTC = tc;				 
 				analyzeTestCaseResult(basePath, projectName, bugID, proPath, buggyPath, fixPath, isReuse, allowMultiThread,tc, assertionLine,
 						config, requireVisualization, true, useSliceBreaker, enableRandom, breakLimit, 
-						includedClassNames, excludedClassNames, eraseorDual,debug, tool2Run);		
+						includedClassNames, excludedClassNames, eraseorDual,debug);		
 			    System.exit(0);
 			}
 
@@ -73,7 +73,7 @@ public class generateResults {
 			boolean isReuse, boolean allowMultiThread, 
 			TestCase tc, int assertionLine, Defects4jProjectConfig config, boolean requireVisualization, 
 			boolean isRunInTestCaseMode, boolean useSliceBreaker, boolean enableRandom, int breakLimit, List<String> includedClassNames, 
-			List<String> excludedClassNames, String eraseorDual,boolean debug, String tool2Run) throws Exception {
+			List<String> excludedClassNames, String eraseorDual,boolean debug) throws Exception {
 		TraceCollector0 newCollector = new TraceCollector0(true);
 		TraceCollector0 oldCollector = new TraceCollector0(false);
 
@@ -188,27 +188,16 @@ public class generateResults {
 		
 //		System.out.println(observedFaultNode);
 		
-		if(tool2Run.equals("dual") || tool2Run.equals("InPreSS") || tool2Run.equals("all")) {
-			if (eraseorDual.equals("S")){
-				InPreSSS configS = new InPreSSS();
-				configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
-			}
-			else if (eraseorDual.equals("E")){
-				InPreSSE configE = new InPreSSE();
-				configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
-			}				
+
+		if (eraseorDual.equals("S")){
+			InPreSSS configS = new InPreSSS();
+			configS.dualSlicing(basePath,projectName, bugID,tc, true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);	
 		}
-		else if (tool2Run.equals("corex") || tool2Run.equals("all")){
-			if (eraseorDual.equals("S")){
-				CoReXS configS = new CoReXS();
-				configS.corex(basePath,projectName, bugID,tc, assertionLine,true,proPath,observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug,tool2Run);	
-			}
-		    else if (eraseorDual.equals("E")){
-				CoReXE configE = new CoReXE();
-				configE.corex(basePath,projectName, bugID,tc, assertionLine,false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug,tool2Run);
-		    }
-		}
-		
+		else if (eraseorDual.equals("E")){
+			InPreSSE configE = new InPreSSE();
+			configE.dualSlicing(basePath,projectName, bugID,tc, false, proPath, observedFaultNode, newTrace, oldTrace, PairList, diffMatcher, oldTraceTime, newTraceTime, codeTime, traceTime,rootcauseFinder.getRealRootCaseList(),debug);
+		}				
+				
 		return;
 	}
 	private void getRootCauseLocationInTrace(String basePath, String projectName, String bugID, List<RootCauseNode> realRootCaseList, Trace newTrace, Trace oldTrace) {
